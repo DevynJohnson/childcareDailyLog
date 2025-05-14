@@ -29,7 +29,7 @@
 ### Third-Party Assets
 <ul>
 <li><a href="https://nextjs.org/">Next.js - Frontend Framework</a></li>
-<li><a href="https://firebase.google.com/">Firebase - Realtime Data Updates</li>
+<li><a href="https://firebase.google.com/">Firebase - Database</a></li>
 
 
 ## Testing
