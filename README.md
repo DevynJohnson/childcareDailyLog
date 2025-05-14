@@ -27,6 +27,9 @@
 <p>If you would like to contribute to this project, please <a href="mailto:dljohnson1313@gmail.com">email me</a>.</p>
             
 ### Third-Party Assets
+<ul>
+<li><a href="https://nextjs.org/">Next.js - Frontend Framework</a></li>
+<li><a href="https://firebase.google.com/">Firebase - Realtime Data Updates</li>
 
 
 ## Testing
