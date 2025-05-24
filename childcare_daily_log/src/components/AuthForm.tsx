@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import {
   createUserWithEmailAndPassword,
@@ -14,6 +15,7 @@ import {
   getDoc,
   deleteDoc,
 } from 'firebase/firestore';
+import { useAuth } from '@/context/AuthContext';
 
 async function registerUser(email: string, password: string) {
   const userCred = await createUserWithEmailAndPassword(auth, email, password);
@@ -26,7 +28,7 @@ async function registerUser(email: string, password: string) {
     role = inviteSnap.data().role;
     await deleteDoc(inviteSnap.ref);
   } else {
-    throw new Error('Registration is restricted. Please contact an administrator.');
+    throw new Error('Registration is restricted. Please contact an administrator for access.');
   }
 
   await setDoc(doc(db, 'users', user.uid), {
@@ -44,34 +46,20 @@ async function registerUser(email: string, password: string) {
 export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
-  const [confirmEmail, setConfirmEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const router = useRouter();
+  const { user, role, loading } = useAuth();
 
-  const validatePassword = (pwd: string) => {
-    return {
-      length: pwd.length >= 8,
-      uppercase: /[A-Z]/.test(pwd),
-      lowercase: /[a-z]/.test(pwd),
-      number: /[0-9]/.test(pwd),
-      special: /[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/.test(pwd),
-    };
-  };
-
-  const passwordChecks = validatePassword(password);
-  const isPasswordValid = Object.values(passwordChecks).every(Boolean);
+  useEffect(() => {
+    if (user && role) {
+      if (role === 'admin') router.push('/admin/dashboard');
+      else if (role === 'caregiver') router.push('/caregiver/dashboard');
+      else if (role === 'parent') router.push('/parent/dashboard');
+    }
+  }, [user, role, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (!isLogin) {
-      if (email !== confirmEmail) return setError('Emails do not match.');
-      if (password !== confirmPassword) return setError('Passwords do not match.');
-      if (!isPasswordValid) return setError('Password does not meet requirements.');
-    }
-
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
@@ -79,13 +67,24 @@ export default function AuthForm() {
       } else {
         await registerUser(email, password);
         alert('Account created! Check your inbox to verify your email.');
-        setIsLogin(true);
       }
     } catch (err: unknown) {
-      if (err instanceof Error) setError(err.message);
-      else setError('An unknown error occurred.');
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert('An unknown error occurred.');
+      }
     }
   };
+
+  // 🌀 Show spinner while loading auth state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 border rounded">
@@ -101,16 +100,6 @@ export default function AuthForm() {
           className="p-2 border rounded"
           required
         />
-        {!isLogin && (
-          <input
-            type="email"
-            value={confirmEmail}
-            onChange={e => setConfirmEmail(e.target.value)}
-            placeholder="Confirm Email"
-            className="p-2 border rounded"
-            required
-          />
-        )}
         <input
           type="password"
           value={password}
@@ -119,45 +108,12 @@ export default function AuthForm() {
           className="p-2 border rounded"
           required
         />
-        {!isLogin && (
-          <>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              placeholder="Confirm Password"
-              className="p-2 border rounded"
-              required
-            />
-            <div className="text-sm text-gray-700 space-y-1">
-              <p className={passwordChecks.length ? 'text-green-600' : 'text-red-500'}>
-                • At least 8 characters
-              </p>
-              <p className={passwordChecks.uppercase ? 'text-green-600' : 'text-red-500'}>
-                • At least 1 uppercase letter
-              </p>
-              <p className={passwordChecks.lowercase ? 'text-green-600' : 'text-red-500'}>
-                • At least 1 lowercase letter
-              </p>
-              <p className={passwordChecks.number ? 'text-green-600' : 'text-red-500'}>
-                • At least 1 number
-              </p>
-              <p className={passwordChecks.special ? 'text-green-600' : 'text-red-500'}>
-                • At least 1 special character
-              </p>
-            </div>
-          </>
-        )}
-        {error && <p className="text-red-500 text-sm">{error}</p>}
         <button type="submit" className="bg-blue-500 text-white py-2 rounded">
           {isLogin ? 'Login' : 'Register'}
         </button>
       </form>
       <button
-        onClick={() => {
-          setIsLogin(!isLogin);
-          setError('');
-        }}
+        onClick={() => setIsLogin(!isLogin)}
         className="mt-4 text-sm text-gray-600 underline"
       >
         {isLogin ? 'Need an account? Register' : 'Already have an account? Login'}
