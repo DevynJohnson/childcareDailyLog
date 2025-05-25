@@ -76,8 +76,7 @@ export default function ActivityModal({
   const [bm, setBm] = useState(false);
   const [noVoid, setNoVoid] = useState(false);
   const [napType, setNapType] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+ 
 
   // Pre-fill fields if editing an existing activity
   useEffect(() => {
@@ -96,8 +95,6 @@ export default function ActivityModal({
       }
 
       if (selectedActivity.napData) {
-        setStartTime(selectedActivity.napData.startTime);
-        setEndTime(selectedActivity.napData.endTime);
         setNapType(selectedActivity.napData.napType);
         setNotes(selectedActivity.napData.notes || "");
       }
@@ -108,8 +105,6 @@ export default function ActivityModal({
       setBm(false);
       setNoVoid(false);
       setNapType("");
-      setStartTime(formatLocalDateTime(base));
-      setEndTime(formatLocalDateTime(base));
     }
   }, [isOpen, selectedDate, selectedActivity]);
 
@@ -139,8 +134,6 @@ export default function ActivityModal({
           ...baseData,
           timestamp: new Date(startTime || Date.now()),
           napData: {
-            startTime,
-            endTime,
             napType,
             notes,
           },
@@ -205,27 +198,6 @@ export default function ActivityModal({
         {/* Nap Fields */}
         {activityType === "Sleep" && (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Start Time
-              </label>
-              <input
-                type="datetime-local"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full border rounded px-2 py-1"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">End Time</label>
-              <input
-                type="datetime-local"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full border rounded px-2 py-1"
-              />
-            </div>
-
             <fieldset>
               <legend className="block text-sm font-medium mb-1">
                 Nap Type
