@@ -23,10 +23,12 @@ type Props = {
         noVoid: boolean;
       };
       napData?: {
-        startTime: string;
-        endTime: string;
         napType: string;
         notes: string;
+      };
+      activityDetails?: {
+        activityCategory: string;
+        detail: string;
       };
     },
     activityId?: string
@@ -45,10 +47,12 @@ type Props = {
       noVoid: boolean;
     };
     napData?: {
-      startTime: string;
-      endTime: string;
       napType: string;
       notes: string;
+    };
+    activityDetails?: {
+      activityCategory: string;
+      detail: string;
     };
   };
 };
@@ -76,9 +80,12 @@ export default function ActivityModal({
   const [bm, setBm] = useState(false);
   const [noVoid, setNoVoid] = useState(false);
   const [napType, setNapType] = useState("");
- 
 
-  // Pre-fill fields if editing an existing activity
+  // New state for Activity card
+  const [activityCategory, setActivityCategory] = useState("");
+  const [activityDetail, setActivityDetail] = useState("");
+
+  // Pre-fill fields if editing
   useEffect(() => {
     const base = new Date(selectedDate);
     const now = new Date();
@@ -98,6 +105,11 @@ export default function ActivityModal({
         setNapType(selectedActivity.napData.napType);
         setNotes(selectedActivity.napData.notes || "");
       }
+
+      if (selectedActivity.activityDetails) {
+        setActivityCategory(selectedActivity.activityDetails.activityCategory);
+        setActivityDetail(selectedActivity.activityDetails.detail);
+      }
     } else {
       setTimestamp(base);
       setNotes("");
@@ -105,6 +117,8 @@ export default function ActivityModal({
       setBm(false);
       setNoVoid(false);
       setNapType("");
+      setActivityCategory("");
+      setActivityDetail("");
     }
   }, [isOpen, selectedDate, selectedActivity]);
 
@@ -132,10 +146,20 @@ export default function ActivityModal({
       onSubmit(
         {
           ...baseData,
-          timestamp: new Date(startTime || Date.now()),
           napData: {
             napType,
             notes,
+          },
+        },
+        activityId
+      );
+    } else if (activityType === "Activity") {
+      onSubmit(
+        {
+          ...baseData,
+          activityDetails: {
+            activityCategory,
+            detail: activityDetail,
           },
         },
         activityId
@@ -220,6 +244,34 @@ export default function ActivityModal({
                 ))}
               </div>
             </fieldset>
+          </div>
+        )}
+
+        {/* Activity Fields */}
+        {activityType === "Activities" && (
+          <div className="space-y-4">
+            <label className="block text-sm font-medium">
+              Choose Activity Type
+            </label>
+            <select
+              value={activityCategory}
+              onChange={(e) => setActivityCategory(e.target.value)}
+              className="w-full border rounded px-3 py-2 bg-white dark:bg-zinc-800"
+            >
+              <option value="">Select</option>
+              <option value="Toys">Toys</option>
+              <option value="Games">Games</option>
+              <option value="Other Activity">Other Activity</option>
+            </select>
+
+            {activityCategory && (
+              <Input
+                type="text"
+                placeholder="Add Details Here"
+                value={activityDetail}
+                onChange={(e) => setActivityDetail(e.target.value)}
+              />
+            )}
           </div>
         )}
 
