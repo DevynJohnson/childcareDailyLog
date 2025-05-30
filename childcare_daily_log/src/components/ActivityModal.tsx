@@ -30,6 +30,10 @@ type Props = {
         activityCategory: string;
         detail: string;
       };
+      foodData?: {
+        item: string;
+        amount: "All" | "Some" | "None";
+      };
     },
     activityId?: string
   ) => void;
@@ -80,6 +84,12 @@ export default function ActivityModal({
   const [bm, setBm] = useState(false);
   const [noVoid, setNoVoid] = useState(false);
   const [napType, setNapType] = useState("");
+  const [needs, setNeeds] = useState<string[]>([]);
+  const [otherNeedDetail, setOtherNeedDetail] = useState("");
+  const [foodItem, setFoodItem] = useState("");
+  const [foodAmount, setFoodAmount] = useState<"All" | "Some" | "None" | "">(
+    ""
+  );
 
   // New state for Activity card
   const [activityCategory, setActivityCategory] = useState("");
@@ -109,6 +119,27 @@ export default function ActivityModal({
       if (selectedActivity.activityDetails) {
         setActivityCategory(selectedActivity.activityDetails.activityCategory);
         setActivityDetail(selectedActivity.activityDetails.detail);
+      }
+
+      if (selectedActivity?.activityType === "Needs") {
+        const needsFromNotes =
+          selectedActivity.notes?.split(", ").filter(Boolean) || [];
+        setNeeds(needsFromNotes);
+        const otherNote = needsFromNotes.find((item) =>
+          item.startsWith("Other:")
+        );
+        if (otherNote) {
+          setOtherNeedDetail(otherNote.replace("Other:", "").trim());
+        }
+        if (selectedActivity?.foodData) {
+          setFoodItem(selectedActivity.foodData.item);
+          setFoodAmount(selectedActivity.foodData.amount);
+        }
+      } else {
+        setNeeds([]);
+        setOtherNeedDetail("");
+        setFoodItem("");
+        setFoodAmount("");
       }
     } else {
       setTimestamp(base);
@@ -160,6 +191,28 @@ export default function ActivityModal({
           activityDetails: {
             activityCategory,
             detail: activityDetail,
+          },
+        },
+        activityId
+      );
+    } else if (activityType === "Needs") {
+      const formattedNeeds = needs.map((need) =>
+        need === "Other" && otherNeedDetail ? `Other: ${otherNeedDetail}` : need
+      );
+      onSubmit(
+        {
+          ...baseData,
+          notes: formattedNeeds.join(", "),
+        },
+        activityId
+      );
+    } else if (activityType === "Food") {
+      onSubmit(
+        {
+          ...baseData,
+          foodData: {
+            item: foodItem,
+            amount: foodAmount as "All" | "Some" | "None",
           },
         },
         activityId
@@ -272,6 +325,68 @@ export default function ActivityModal({
                 onChange={(e) => setActivityDetail(e.target.value)}
               />
             )}
+          </div>
+        )}
+
+        {activityType === "Needs" && (
+          <div className="space-y-2">
+            {["Diapers", "Wipes", "Extra Clothes", "Snacks", "Other"].map(
+              (item) => (
+                <label key={item} className="flex items-center space-x-2">
+                  <Checkbox
+                    checked={needs.includes(item)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setNeeds((prev) => [...prev, item]);
+                      } else {
+                        setNeeds((prev) => prev.filter((n) => n !== item));
+                        if (item === "Other") setOtherNeedDetail("");
+                      }
+                    }}
+                  />
+                  <span>{item}</span>
+                </label>
+              )
+            )}
+
+            {needs.includes("Other") && (
+              <Input
+                type="text"
+                placeholder="Please add a description"
+                value={otherNeedDetail}
+                onChange={(e) => setOtherNeedDetail(e.target.value)}
+              />
+            )}
+          </div>
+        )}
+
+        {activityType === "Food" && (
+          <div className="space-y-4">
+            <label className="block text-sm font-medium">Food Item</label>
+            <Input
+              type="text"
+              placeholder="Enter food item..."
+              value={foodItem}
+              onChange={(e) => setFoodItem(e.target.value)}
+            />
+
+            <label className="block text-sm font-medium">Amount Eaten</label>
+            <div className="flex justify-between gap-4">
+              {["All", "Some", "None"].map((option) => (
+                <label key={option} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={foodAmount === option}
+                    onChange={() =>
+                      setFoodAmount((prev) =>
+                        prev === option ? "" : (option as any)
+                      )
+                    }
+                  />
+                  <span>{option}</span>
+                </label>
+              ))}
+            </div>
           </div>
         )}
 

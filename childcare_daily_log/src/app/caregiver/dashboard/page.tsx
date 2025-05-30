@@ -27,7 +27,7 @@ import ActivityModal from "@/components/ActivityModal";
 import "react-day-picker/dist/style.css";
 import { useCallback } from "react";
 
-const activityTypes = ["Bathroom", "Sleep", "Activities", "Needs"] as const;
+const activityTypes = ["Bathroom", "Sleep", "Activities", "Food", "Needs"] as const;
 
 type Child = {
   id: string;
