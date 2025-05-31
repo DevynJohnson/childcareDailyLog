@@ -44,7 +44,7 @@ export default function NavBar() {
             )}
             {(role === "parent" || role === "admin") && (
               <Link href="/parent/dashboard" className="hover:underline">
-                Parent Dashboard
+                Parent/Guardian Dashboard
               </Link>
             )}
           </>
@@ -60,7 +60,7 @@ export default function NavBar() {
           >
             <option value="admin">View as Admin</option>
             <option value="caregiver">View as Caregiver</option>
-            <option value="parent">View as Parent</option>
+            <option value="parent">View as Parent/Guardian</option>
           </select>
         )}
       </div>

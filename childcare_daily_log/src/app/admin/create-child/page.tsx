@@ -64,7 +64,7 @@ export default function CreateChildProfile() {
         />
         <input
           type="text"
-          placeholder="Parent Emails (comma separated)"
+          placeholder="Parent/Guardian Emails (comma separated)"
           value={parentEmails}
           onChange={e => setParentEmails(e.target.value)}
           className="p-2 border rounded"

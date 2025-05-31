@@ -93,7 +93,7 @@ export default function ChildManagementPage() {
           <tr className="bg-dark-100 text-left">
             <th className="p-2 border">First Name</th>
             <th className="p-2 border">Last Name</th>
-            <th className="p-2 border">Parent Emails</th>
+            <th className="p-2 border">Parent/Guardian Emails</th>
             <th className="p-2 border">Allergies</th>
             <th className="p-2 border">Notes</th>
             <th className="p-2 border">Actions</th>

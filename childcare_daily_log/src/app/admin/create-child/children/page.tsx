@@ -75,7 +75,7 @@ export default function ChildrenAdminPage() {
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Child Name" className="p-2 border rounded w-full" required />
         <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes" className="p-2 border rounded w-full" />
         <textarea value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="Allergies" className="p-2 border rounded w-full" />
-        <input value={parentEmails} onChange={e => setParentEmails(e.target.value)} placeholder="Parent Emails (comma separated)" className="p-2 border rounded w-full" />
+        <input value={parentEmails} onChange={e => setParentEmails(e.target.value)} placeholder="Parent/Guardian Emails (comma separated)" className="p-2 border rounded w-full" />
         <button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded">Add Child</button>
       </form>
 
@@ -87,7 +87,7 @@ export default function ChildrenAdminPage() {
               <p><strong>Name:</strong> {child.name}</p>
               <p><strong>Notes:</strong> {child.notes}</p>
               <p><strong>Allergies:</strong> {child.allergies}</p>
-              <p><strong>Parents:</strong> {child.parentEmails.join(', ')}</p>
+              <p><strong>Parents/Guardians:</strong> {child.parentEmails.join(', ')}</p>
             </div>
             <button onClick={() => handleDelete(child.id)} className="text-red-500 hover:underline">Delete</button>
           </li>
