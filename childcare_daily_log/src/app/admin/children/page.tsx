@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Dialog } from '@headlessui/react';
-import { X } from 'lucide-react';
-import { db } from '@/lib/firebase';
+import { useEffect, useState } from "react";
+import { Dialog } from "@headlessui/react";
+import { X } from "lucide-react";
+import { db } from "@/lib/firebase";
 import {
   collection,
   getDocs,
@@ -11,16 +11,24 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-} from 'firebase/firestore';
-import ChildForm from './ChildForm';
+} from "firebase/firestore";
+import ChildForm from "./ChildForm";
+
+type ParentInfo = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+};
 
 type Child = {
   id?: string;
   firstName: string;
   lastName: string;
-  parentEmails: string[];
+  birthDate?: Date | null;
   allergies?: string;
   notes?: string;
+  parents?: ParentInfo[];
 };
 
 export default function ChildManagementPage() {
@@ -29,7 +37,7 @@ export default function ChildManagementPage() {
   const [editingChild, setEditingChild] = useState<Child | null>(null);
 
   const fetchChildren = async () => {
-    const snapshot = await getDocs(collection(db, 'children'));
+    const snapshot = await getDocs(collection(db, "children"));
     const results = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
@@ -52,32 +60,31 @@ export default function ChildManagementPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteDoc(doc(db, 'children', id));
+    await deleteDoc(doc(db, "children", id));
     fetchChildren();
   };
 
-  const handleSave = async (child: Child) => {
-    if (editingChild && editingChild.id) {
-      const docRef = doc(db, 'children', editingChild.id);
-      await updateDoc(docRef, {
-        firstName: child.firstName,
-        lastName: child.lastName,
-        parentEmails: child.parentEmails,
-        allergies: child.allergies || '',
-        notes: child.notes || '',
-      });
-    } else {
-      await addDoc(collection(db, 'children'), {
-        firstName: child.firstName,
-        lastName: child.lastName,
-        parentEmails: child.parentEmails,
-        allergies: child.allergies || '',
-        notes: child.notes || '',
-      });
-    }
-    setIsModalOpen(false);
-    fetchChildren();
+ const handleSave = async (child: Child) => {
+  const payload = {
+    firstName: child.firstName,
+    lastName: child.lastName,
+    birthDate: child.birthDate || "",
+    allergies: child.allergies || "",
+    notes: child.notes || "",
+    parents: child.parents || [],
   };
+
+  if (editingChild && editingChild.id) {
+    const docRef = doc(db, "children", editingChild.id);
+    await updateDoc(docRef, payload);
+  } else {
+    await addDoc(collection(db, "children"), payload);
+  }
+
+  setIsModalOpen(false);
+  fetchChildren();
+};
+
 
   return (
     <div className="p-6">
@@ -93,7 +100,9 @@ export default function ChildManagementPage() {
           <tr className="bg-dark-100 text-left">
             <th className="p-2 border">First Name</th>
             <th className="p-2 border">Last Name</th>
-            <th className="p-2 border">Parent/Guardian Emails</th>
+            <th className="p-2 border">Birthday</th>
+            <th className="p-2 border">Age</th>
+            <th className="p-2 border">Parent/Guardians</th>
             <th className="p-2 border">Allergies</th>
             <th className="p-2 border">Notes</th>
             <th className="p-2 border">Actions</th>
@@ -104,7 +113,29 @@ export default function ChildManagementPage() {
             <tr key={child.id} className="border-t">
               <td className="p-2 border">{child.firstName}</td>
               <td className="p-2 border">{child.lastName}</td>
-              <td className="p-2 border">{child.parentEmails.join(', ')}</td>
+              <td className="p-2 border">
+                {child.birthDate
+                  ? new Date(child.birthDate).toLocaleDateString()
+                  : "N/A"}
+              </td>
+              <td className="p-2 border">
+                {child.birthDate
+                  ? Math.floor(
+                      (new Date().getTime() -
+                        new Date(child.birthDate).getTime()) /
+                        (1000 * 60 * 60 * 24 * 365.25)
+                    )
+                  : "N/A"}
+              </td>
+              <td className="p-2 border">
+                {child.parents
+                  ? child.parents.map((parent) => (
+                      <div key={parent.email}>
+                        {parent.firstName} {parent.lastName} ({parent.email})
+                      </div>
+                    ))
+                  : "N/A"}
+              </td>
               <td className="p-2 border">{child.allergies}</td>
               <td className="p-2 border">{child.notes}</td>
               <td className="p-2 border space-x-2">
@@ -116,7 +147,9 @@ export default function ChildManagementPage() {
                 </button>
                 <button
                   onClick={() =>
-                    child.id != null ? handleDelete(String(child.id)) : undefined
+                    child.id != null
+                      ? handleDelete(String(child.id))
+                      : undefined
                   }
                   className="text-red-600"
                   disabled={child.id == null}
