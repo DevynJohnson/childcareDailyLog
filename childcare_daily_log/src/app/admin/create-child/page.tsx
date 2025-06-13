@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { showSuccess, showError } from '@/lib/toastUtils';
 
 export default function CreateChildProfile() {
   const [name, setName] = useState('');
@@ -11,32 +12,34 @@ export default function CreateChildProfile() {
   const [parentEmails, setParentEmails] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      const emailsArray = parentEmails
-        .split(',')
-        .map(email => email.trim())
-        .filter(email => email);
+  try {
+    const emailsArray = parentEmails
+      .split(',')
+      .map(email => email.trim())
+      .filter(email => email);
 
-      await addDoc(collection(db, 'children'), {
-        name,
-        notes,
-        allergies,
-        parentEmails: emailsArray,
-        createdAt: new Date(),
-      });
+    await addDoc(collection(db, 'children'), {
+      name,
+      notes,
+      allergies,
+      parentEmails: emailsArray,
+      createdAt: new Date(),
+    });
 
-      alert('Child profile created!');
-      setName('');
-      setNotes('');
-      setAllergies('');
-      setParentEmails('');
-    } catch (err) {
-      console.error('Error creating child profile:', err);
-      alert('Something went wrong. Please try again.');
-    }
-  };
+    showSuccess('Child profile created!');
+
+    setName('');
+    setNotes('');
+    setAllergies('');
+    setParentEmails('');
+  } catch (err) {
+    console.error('Error creating child profile:', err);
+    showError('Something went wrong.', 'Please try again.');
+  }
+};
+
 
   return (
     <div className="max-w-lg mx-auto mt-10 p-6 border rounded shadow">
