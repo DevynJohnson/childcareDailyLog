@@ -193,10 +193,10 @@ export default function CaregiverDashboard() {
       {selectedChildId && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {activityTypes.map((type) => (
-            <Card key={type} className="p-4 space-y-2">
+            <Card key={type} className="card-gradient p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">{type}</h2>
-                <Button size="sm" onClick={() => handleAddClick(type)}>
+                <Button size="sm" className="btn-primary" onClick={() => handleAddClick(type)}>
                   + Add
                 </Button>
               </div>
@@ -207,17 +207,17 @@ export default function CaregiverDashboard() {
                       key={activity.id}
                       className="border p-2 rounded flex justify-between items-center"
                     >
-                      <div className="text-sm">
+                      <div className="text-sm text-white" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
                         {activity.notes || "(no notes)"}
                       </div>
-                      <Button size="sm" variant="ghost" onClick={() => handleEditClick(type, activity)}>
+                      <Button size="sm" className="btn-primary" onClick={() => handleEditClick(type, activity)}>
                         Edit
                       </Button>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-muted-foreground text-sm">No updates yet.</div>
+                <div className="text-white text-sm" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>No updates yet.</div>
               )}
             </Card>
           ))}

@@ -404,7 +404,7 @@ export default function ActivityModal({
           onChange={(e) => setTimestamp(new Date(e.target.value))}
         />
 
-        <Button onClick={handleSubmit} className="w-full">
+        <Button onClick={handleSubmit} className="w-full btn-primary">
           Save
         </Button>
 
