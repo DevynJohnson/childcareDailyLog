@@ -16,6 +16,7 @@ type Props = {
       activityType: string;
       notes: string;
       timestamp: Date;
+      needsData: string[];
     },
     activityId?: string
   ) => void;
@@ -77,6 +78,7 @@ export default function NeedsModal({
   }, [isOpen, selectedDate, selectedActivity]);
 
   const handleSubmit = () => {
+    // Save selected needs as a separate field (needsData)
     const formattedNeeds = needs.map((need) =>
       need === "Other" && otherNeedDetail ? `Other: ${otherNeedDetail}` : need
     );
@@ -84,8 +86,9 @@ export default function NeedsModal({
       {
         childId,
         activityType,
-        notes: formattedNeeds.join(", "),
+        notes,
         timestamp,
+        needsData: formattedNeeds,
       },
       activityId
     );
@@ -98,17 +101,17 @@ export default function NeedsModal({
       onClose={onClose}
       className="fixed z-50 inset-0 flex items-center justify-center p-4"
     >
-      <Dialog.Panel className="bg-green-700 border border-black p-6 rounded-lg w-full max-w-md shadow-lg space-y-4">
+      <Dialog.Panel className="bg-white dark:bg-zinc-900 p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-white drop-shadow">Needs Entry</h2>
+          <h2 className="text-xl font-semibold">Needs Entry</h2>
           <button onClick={onClose}>
-            <X className="w-5 h-5 text-white drop-shadow" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-2">
           {NEEDS_OPTIONS.map((item) => (
-            <label key={item} className="flex items-center space-x-2 text-white drop-shadow">
+            <label key={item} className="flex items-center space-x-2">
               <Checkbox
                 checked={needs.includes(item)}
                 onCheckedChange={(checked) => {
@@ -138,7 +141,6 @@ export default function NeedsModal({
           placeholder="Add any notes..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="text-white drop-shadow"
         />
 
         <Input
@@ -155,7 +157,7 @@ export default function NeedsModal({
           onChange={(e) => setTimestamp(new Date(e.target.value))}
         />
 
-        <Button onClick={handleSubmit} className="w-full btn-primary bg-indigo-900">
+        <Button onClick={handleSubmit} className="w-full btn-primary">
           Save
         </Button>
 

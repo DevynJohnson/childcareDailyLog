@@ -73,6 +73,7 @@ function getNeedsActivity(activity: any) {
   return {
     notes: activity.notes ?? "",
     timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
+    needsData: activity.needsData ?? [],
   };
 }
 function getFoodActivity(activity: any) {
@@ -327,7 +328,36 @@ export default function CaregiverDashboard() {
                         </div>
                       );
                     }
-                    // For other types, you can add a summary if desired, or just show nothing
+                    if (type === "Needs" && activity.needsData && Array.isArray(activity.needsData)) {
+                      // Needs summary: show each selected need as emoji + label in an unordered list
+                      const needsEmojis: Record<string, string> = {
+                        "Diapers": "🧷",
+                        "Wipes": "🧻",
+                        "Extra Clothes": "👕",
+                        "Snacks": "🍫",
+                        "Other": "⭐",
+                      };
+                      const needsArr = activity.needsData;
+                      const needsList = needsArr.map((need: string, i: number) => {
+                        let label = need;
+                        let emoji = needsEmojis[need] || needsEmojis["Other"];
+                        if (need.startsWith("Other:")) {
+                          label = need;
+                          emoji = needsEmojis["Other"];
+                        }
+                        return (
+                          <li key={i} className="flex items-center gap-2 text-white text-xs mb-1" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
+                            <span>{emoji}</span>
+                            <span>{label}</span>
+                          </li>
+                        );
+                      });
+                      summary = (
+                        <ul className="mb-1 ml-2 list-disc list-inside">
+                          {needsList}
+                        </ul>
+                      );
+                    }
                     return (
                       <div
                         key={activity.id}

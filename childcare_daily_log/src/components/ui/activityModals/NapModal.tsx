@@ -101,7 +101,7 @@ export default function NapModal({
       onClose={onClose}
       className="fixed z-50 inset-0 flex items-center justify-center p-4"
     >
-      <Dialog.Panel className="bg-white dark:bg-zinc-900 p-6 rounded-lg w-full max-w-md shadow-lg space-y-4">
+      <Dialog.Panel className="bg-white dark:bg-zinc-900 p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">Today's Nap:</h2>
           <button onClick={onClose}>
