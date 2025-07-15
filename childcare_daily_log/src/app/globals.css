@@ -48,7 +48,7 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: #f8fafc;
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
@@ -120,6 +120,105 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    background: var(--background);
+    color: var(--color-foreground);
+  }
+  /* Default card gradient background */
+  .card-gradient {
+    background: #479132 !important;
+    border: 2px solid #357024;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+    color: #fff !important;
+    text-shadow: 0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Primary button accent background */
+  .btn-primary {
+    background: #0f005e !important;
+    color: #fff !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(15,0,94,0.16) !important;
+  }
+  .btn-primary:hover, .btn-primary:focus {
+    background: #18008a !important;
+  }
+  /* Gradient background utility classes */
+  .bg-gradient-1 {
+    background: var(--gradient-1);
+  }
+  .bg-gradient-2 {
+    background: var(--gradient-2);
+  }
+  .bg-gradient-3 {
+    background: var(--gradient-3);
+  }
+  .bg-gradient-4 {
+    background: var(--gradient-4);
+  }
+  .bg-gradient-5 {
+    background: var(--gradient-5);
+  }
+  /* Accent color utility classes */
+  .text-accent-pink { color: var(--accent-pink); }
+  .text-accent-yellow { color: var(--accent-yellow); }
+  .text-accent-blue { color: var(--accent-blue); }
+  .text-accent-green { color: var(--accent-green); }
+  .text-accent-orange { color: var(--accent-orange); }
+  .bg-accent-pink { background: var(--accent-pink); }
+  .bg-accent-yellow { background: var(--accent-yellow); }
+  .bg-accent-blue { background: var(--accent-blue); }
+  .bg-accent-green { background: var(--accent-green); }
+  .bg-accent-orange { background: var(--accent-orange); }
+  html {
+    font-size: 18px; /* Larger base font for readability on tablets */
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+  body {
+    font-family: var(--font-sans, 'Inter', 'Segoe UI', Arial, sans-serif);
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: var(--color-background);
+    color: var(--color-foreground);
+  }
+  button, [role="button"], input[type="button"], input[type="submit"] {
+    min-height: 56px;
+    min-width: 56px;
+    font-size: 1.125rem;
+    border-radius: var(--radius-lg, 1rem);
+    padding: 0.75rem 2rem;
+    box-sizing: border-box;
+    touch-action: manipulation;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  }
+  input, select, textarea {
+    font-size: 1.125rem;
+    border-radius: var(--radius-md, 0.75rem);
+    padding: 0.75rem 1rem;
+    box-sizing: border-box;
+  }
+  label {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  .container, .main-content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+  .card {
+    border-radius: var(--radius-xl, 1.25rem);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  .spacer {
+    height: 2rem;
   }
 }
