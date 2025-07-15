@@ -374,13 +374,23 @@ export default function CaregiverDashboard() {
                           >
                             Edit
                           </Button>
-                          <Button
-                            className="btn-primary flex-1 min-w-0 min-h-0 h-5 px-1 py-0 text-[11px] leading-none"
-                            style={{height: '22px', lineHeight: '1'}}
-                            onClick={() => toggleShowNotes(activity.id)}
-                          >
-                            {showNotes[activity.id] ? "Hide Notes" : "Show Notes"}
-                          </Button>
+                          {activity.notes && activity.notes.trim() ? (
+                            <Button
+                              className="btn-primary flex-1 min-w-0 min-h-0 h-5 px-1 py-0 text-[11px] leading-none"
+                              style={{height: '22px', lineHeight: '1'}}
+                              onClick={() => toggleShowNotes(activity.id)}
+                            >
+                              {showNotes[activity.id] ? "Hide Notes" : "Show Notes"}
+                            </Button>
+                          ) : (
+                            <Button
+                              className="btn-primary flex-1 min-w-0 min-h-0 h-5 px-1 py-0 text-[11px] leading-none opacity-50 cursor-not-allowed"
+                              style={{height: '22px', lineHeight: '1'}}
+                              disabled
+                            >
+                              No Notes
+                            </Button>
+                          )}
                         </div>
                         {showNotes[activity.id] && activity.notes && (
                           <div className="mt-1 text-white text-shadow bg-black/30 rounded p-2 text-xs">
