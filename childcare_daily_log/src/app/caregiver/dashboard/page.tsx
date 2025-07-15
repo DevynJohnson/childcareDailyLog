@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+// Show notes state for toggling notes display per activity
+import { useState as useLocalState } from "react";
 import {
   collection,
   doc,
@@ -23,7 +25,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import ActivityModal from "@/components/ActivityModal";
+import BathroomModal from "@/components/ui/activityModals/BathroomModal";
+import NapModal from "@/components/ui/activityModals/NapModal";
+import ActivitiesModal from "@/components/ui/activityModals/ActivitiesModal";
+import NeedsModal from "@/components/ui/activityModals/NeedsModal";
+import FoodModal from "@/components/ui/activityModals/FoodModal";
 import "react-day-picker/dist/style.css";
 import { useCallback } from "react";
 
@@ -35,7 +41,52 @@ type Child = {
   lastName: string;
 };
 
+// Type guards for modal props
+function getBathroomActivity(activity: any) {
+  if (!activity) return undefined;
+  return {
+    notes: activity.notes ?? "",
+    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
+    bathroomData: activity.bathroomData,
+  };
+}
+function getNapActivity(activity: any) {
+  if (!activity) return undefined;
+  // Support both napData and nap for backward compatibility
+  const napData = activity.napData || activity.nap;
+  return {
+    notes: activity.notes ?? "",
+    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
+    napData,
+  };
+}
+function getActivitiesActivity(activity: any) {
+  if (!activity) return undefined;
+  return {
+    notes: activity.notes ?? "",
+    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
+    activityDetails: activity.activityDetails,
+  };
+}
+function getNeedsActivity(activity: any) {
+  if (!activity) return undefined;
+  return {
+    notes: activity.notes ?? "",
+    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
+  };
+}
+function getFoodActivity(activity: any) {
+  if (!activity) return undefined;
+  return {
+    notes: activity.notes ?? "",
+    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
+    foodData: activity.foodData,
+  };
+}
+
 export default function CaregiverDashboard() {
+  const [showNotes, setShowNotes] = useLocalState<{ [id: string]: boolean }>({});
+  const toggleShowNotes = (id: string) => setShowNotes((prev) => ({ ...prev, [id]: !prev[id] }));
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [children, setChildren] = useState<Child[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -202,19 +253,113 @@ export default function CaregiverDashboard() {
               </div>
               {activitiesByType[type]?.length > 0 ? (
                 <div className="space-y-2">
-                  {activitiesByType[type].map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="border p-2 rounded flex justify-between items-center"
-                    >
-                      <div className="text-sm text-white" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
-                        {activity.notes || "(no notes)"}
+                  {activitiesByType[type].map((activity) => {
+                    let summary = null;
+                    if (type === "Bathroom" && activity.bathroomData) {
+                      const data = activity.bathroomData as { urinated?: boolean; bm?: boolean; noVoid?: boolean };
+                      const icons = [];
+                      if (data.urinated) icons.push("💦 Urinated");
+                      if (data.bm) icons.push("💩 BM");
+                      if (data.noVoid) icons.push("🚫 No Void");
+                      summary = (
+                        <div className="flex gap-2 items-center mb-1">
+                          {icons.map((txt, i) => (
+                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>{txt}</span>
+                          ))}
+                        </div>
+                      );
+                    } else if (type === "Sleep" && (activity.napData || activity.nap)) {
+                      // Sleep summary icons: Full Moon for full nap, Crescent Moon for partial, Red Circle w/Line for no nap
+                      const data = (activity.napData || activity.nap) as { fullNap?: boolean; partialNap?: boolean; noNap?: boolean };
+                      const icons = [];
+                      if (data.fullNap) icons.push("🌕 Full Nap");
+                      if (data.partialNap) icons.push("🌙 Partial Nap");
+                      if (data.noNap) icons.push("🚫 No Nap");
+                      summary = (
+                        <div className="flex gap-2 items-center mb-1">
+                          {icons.map((txt, i) => (
+                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>{txt}</span>
+                          ))}
+                        </div>
+                      );
+                    } else if (type === "Activities" && activity.activityDetails) {
+                      // Activities summary: emoji + activity type, then detail below
+                      const activityEmojis: Record<string, string> = {
+                        "Toys": "🧸",
+                        "Games": "🎲",
+                        "Outdoor Play": "☀️",
+                        "Art/Crafts": "🎨",
+                        "Music/Singing": "🎵",
+                        "Reading/Storytime": "📚",
+                        "Other Activity": "✨",
+                      };
+                      const details = activity.activityDetails as { activityCategory?: string; detail?: string };
+                      const emoji = activityEmojis[details.activityCategory || ""] || "✨";
+                      summary = (
+                        <div className="mb-1">
+                          <div className="flex gap-2 items-center mb-1">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
+                              {emoji} {details.activityCategory}
+                            </span>
+                          </div>
+                          {details.detail && (
+                            <div className="ml-1 text-xs text-white" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
+                              {details.detail}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    } else if (type === "Food" && activity.foodData) {
+                      // Food summary: show food item and amount eaten
+                      const data = activity.foodData as { item?: string; amount?: "All" | "Some" | "None" };
+                      summary = (
+                        <div className="mb-1">
+                          <div className="flex gap-2 items-center mb-1">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
+                              🍽️ {data.item}
+                            </span>
+                            {data.amount && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/20 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
+                                {data.amount} eaten
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+                    // For other types, you can add a summary if desired, or just show nothing
+                    return (
+                      <div
+                        key={activity.id}
+                        className="border-b p-2 flex-col items-start"
+                      >
+                        <div className="text-sm text-white mb-2" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
+                          {summary}
+                        </div>
+                        <div className="flex gap-1 w-full mt-1">
+                          <Button
+                            className="btn-primary flex-1 min-w-0 min-h-0 h-5 px-1 py-0 text-[11px] leading-none"
+                            style={{height: '22px', lineHeight: '1'}}
+                            onClick={() => handleEditClick(type, activity)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            className="btn-primary flex-1 min-w-0 min-h-0 h-5 px-1 py-0 text-[11px] leading-none"
+                            style={{height: '22px', lineHeight: '1'}}
+                            onClick={() => toggleShowNotes(activity.id)}
+                          >
+                            {showNotes[activity.id] ? "Hide Notes" : "Show Notes"}
+                          </Button>
+                        </div>
+                        {showNotes[activity.id] && activity.notes && (
+                          <div className="mt-1 text-white text-shadow bg-black/30 rounded p-2 text-xs">
+                            {activity.notes}
+                          </div>
+                        )}
                       </div>
-                      <Button size="sm" className="btn-primary" onClick={() => handleEditClick(type, activity)}>
-                        Edit
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-white text-sm" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>No updates yet.</div>
@@ -224,39 +369,165 @@ export default function CaregiverDashboard() {
         </div>
       )}
 
-      {selectedChildId && activeActivityType && (
-        <ActivityModal
-  isOpen={isModalOpen}
-  onClose={() => setIsModalOpen(false)}
-  onSubmit={async (data) => {
-    await handleActivitySubmit({
-      childId: data.childId,
-      activityType: data.activityType,
-      selectedDate: data.timestamp,
-      data,
-      activityId: selectedActivityId || undefined,
-    });
-    setIsModalOpen(false);
-  }}
-  onDelete={async () => {
-    if (!selectedChildId || !selectedActivityId || !activeActivityType) return;
-
-    const dateKey = selectedDate.toISOString().split("T")[0];
-    const activityRef = doc(
-      db,
-      `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
-    );
-
-    await deleteDoc(activityRef);
-    setIsModalOpen(false);
-    fetchActivities(); // Refresh the activity list
-  }}
-  childId={selectedChildId}
-  activityType={activeActivityType}
-  selectedDate={selectedDate}
-  activityId={selectedActivityId ?? undefined} // 💥 NEW
-/>
-
+      {selectedChildId && activeActivityType === "Bathroom" && (
+        <BathroomModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={async (data) => {
+            await handleActivitySubmit({
+              childId: data.childId,
+              activityType: data.activityType,
+              selectedDate: data.timestamp,
+              data,
+              activityId: selectedActivityId || undefined,
+            });
+            setIsModalOpen(false);
+          }}
+          onDelete={async () => {
+            if (!selectedChildId || !selectedActivityId || !activeActivityType) return;
+            const dateKey = selectedDate.toISOString().split("T")[0];
+            const activityRef = doc(
+              db,
+              `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
+            );
+            await deleteDoc(activityRef);
+            setIsModalOpen(false);
+            fetchActivities();
+          }}
+          childId={selectedChildId}
+          // activityType prop removed
+          selectedDate={selectedDate}
+          activityId={selectedActivityId ?? undefined}
+          selectedActivity={getBathroomActivity(selectedActivity)}
+        />
+      )}
+      {selectedChildId && activeActivityType === "Sleep" && (
+        <NapModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={async (data) => {
+            await handleActivitySubmit({
+              childId: data.childId,
+              activityType: data.activityType,
+              selectedDate: data.timestamp,
+              data,
+              activityId: selectedActivityId || undefined,
+            });
+            setIsModalOpen(false);
+          }}
+          onDelete={async () => {
+            if (!selectedChildId || !selectedActivityId || !activeActivityType) return;
+            const dateKey = selectedDate.toISOString().split("T")[0];
+            const activityRef = doc(
+              db,
+              `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
+            );
+            await deleteDoc(activityRef);
+            setIsModalOpen(false);
+            fetchActivities();
+          }}
+          childId={selectedChildId}
+          // activityType prop removed
+          selectedDate={selectedDate}
+          activityId={selectedActivityId ?? undefined}
+          selectedActivity={getNapActivity(selectedActivity)}
+        />
+      )}
+      {selectedChildId && activeActivityType === "Activities" && (
+        <ActivitiesModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={async (data) => {
+            await handleActivitySubmit({
+              childId: data.childId,
+              activityType: data.activityType,
+              selectedDate: data.timestamp,
+              data,
+              activityId: selectedActivityId || undefined,
+            });
+            setIsModalOpen(false);
+          }}
+          onDelete={async () => {
+            if (!selectedChildId || !selectedActivityId || !activeActivityType) return;
+            const dateKey = selectedDate.toISOString().split("T")[0];
+            const activityRef = doc(
+              db,
+              `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
+            );
+            await deleteDoc(activityRef);
+            setIsModalOpen(false);
+            fetchActivities();
+          }}
+          childId={selectedChildId}
+          activityType={activeActivityType}
+          selectedDate={selectedDate}
+          activityId={selectedActivityId ?? undefined}
+          selectedActivity={getActivitiesActivity(selectedActivity)}
+        />
+      )}
+      {selectedChildId && activeActivityType === "Needs" && (
+        <NeedsModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={async (data) => {
+            await handleActivitySubmit({
+              childId: data.childId,
+              activityType: data.activityType,
+              selectedDate: data.timestamp,
+              data,
+              activityId: selectedActivityId || undefined,
+            });
+            setIsModalOpen(false);
+          }}
+          onDelete={async () => {
+            if (!selectedChildId || !selectedActivityId || !activeActivityType) return;
+            const dateKey = selectedDate.toISOString().split("T")[0];
+            const activityRef = doc(
+              db,
+              `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
+            );
+            await deleteDoc(activityRef);
+            setIsModalOpen(false);
+            fetchActivities();
+          }}
+          childId={selectedChildId}
+          activityType={activeActivityType}
+          selectedDate={selectedDate}
+          activityId={selectedActivityId ?? undefined}
+          selectedActivity={getNeedsActivity(selectedActivity)}
+        />
+      )}
+      {selectedChildId && activeActivityType === "Food" && (
+        <FoodModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={async (data) => {
+            await handleActivitySubmit({
+              childId: data.childId,
+              activityType: data.activityType,
+              selectedDate: data.timestamp,
+              data,
+              activityId: selectedActivityId || undefined,
+            });
+            setIsModalOpen(false);
+          }}
+          onDelete={async () => {
+            if (!selectedChildId || !selectedActivityId || !activeActivityType) return;
+            const dateKey = selectedDate.toISOString().split("T")[0];
+            const activityRef = doc(
+              db,
+              `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
+            );
+            await deleteDoc(activityRef);
+            setIsModalOpen(false);
+            fetchActivities();
+          }}
+          childId={selectedChildId}
+          activityType={activeActivityType}
+          selectedDate={selectedDate}
+          activityId={selectedActivityId ?? undefined}
+          selectedActivity={getFoodActivity(selectedActivity)}
+        />
       )}
     </div>
   );
