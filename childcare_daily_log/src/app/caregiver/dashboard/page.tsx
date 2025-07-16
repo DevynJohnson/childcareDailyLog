@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { DayPicker } from "react-day-picker";
+import { formatTimestamp, formatTimeAgo } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -42,46 +43,172 @@ type Child = {
 };
 
 // Type guards for modal props
-function getBathroomActivity(activity: any) {
+interface BathroomActivity {
+  notes?: string;
+  timestamp?: string | number | { toDate?: () => Date };
+  bathroomData?: {
+    urinated?: boolean;
+    bm?: boolean;
+    noVoid?: boolean;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+function getBathroomActivity(activity: BathroomActivity | undefined) {
   if (!activity) return undefined;
+  let bathroomData: { urinated: boolean; bm: boolean; noVoid: boolean } | undefined = undefined;
+  if (activity.bathroomData) {
+    bathroomData = {
+      urinated: activity.bathroomData.urinated ?? false,
+      bm: activity.bathroomData.bm ?? false,
+      noVoid: activity.bathroomData.noVoid ?? false,
+    };
+  }
   return {
     notes: activity.notes ?? "",
-    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
-    bathroomData: activity.bathroomData,
+    timestamp: activity.timestamp
+      ? new Date(
+          typeof activity.timestamp === "object" &&
+          activity.timestamp !== null &&
+          typeof (activity.timestamp as { toDate?: () => Date }).toDate === "function"
+            ? (activity.timestamp as { toDate: () => Date }).toDate()
+            : (activity.timestamp as string | number)
+        )
+      : new Date(),
+    bathroomData,
   };
 }
-function getNapActivity(activity: any) {
+type NapActivity = {
+  notes?: string;
+  timestamp?: string | number | { toDate?: () => Date };
+  napData?: {
+    fullNap?: boolean;
+    partialNap?: boolean;
+    noNap?: boolean;
+    [key: string]: unknown;
+  };
+  nap?: {
+    fullNap?: boolean;
+    partialNap?: boolean;
+    noNap?: boolean;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+};
+
+function getNapActivity(activity: NapActivity | undefined) {
   if (!activity) return undefined;
   // Support both napData and nap for backward compatibility
   const napData = activity.napData || activity.nap;
   return {
     notes: activity.notes ?? "",
-    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
+    timestamp: activity.timestamp
+      ? new Date(
+          typeof activity.timestamp === "object" &&
+          activity.timestamp !== null &&
+          typeof (activity.timestamp as { toDate?: () => Date }).toDate === "function"
+            ? (activity.timestamp as { toDate: () => Date }).toDate()
+            : (activity.timestamp as string | number)
+        )
+      : new Date(),
     napData,
   };
 }
-function getActivitiesActivity(activity: any) {
+type ActivitiesActivity = {
+  notes?: string;
+  timestamp?: string | number | { toDate?: () => Date };
+  activityDetails?: {
+    activityCategory?: string;
+    detail?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+};
+
+function getActivitiesActivity(activity: ActivitiesActivity | undefined) {
   if (!activity) return undefined;
+  let activityDetails: { activityCategory: string; detail: string } | undefined = undefined;
+  if (
+    activity.activityDetails &&
+    typeof activity.activityDetails === "object" &&
+    typeof activity.activityDetails.activityCategory === "string" &&
+    typeof activity.activityDetails.detail === "string"
+  ) {
+    activityDetails = {
+      activityCategory: activity.activityDetails.activityCategory,
+      detail: activity.activityDetails.detail,
+    };
+  }
   return {
     notes: activity.notes ?? "",
-    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
-    activityDetails: activity.activityDetails,
+    timestamp: activity.timestamp
+      ? new Date(
+          typeof activity.timestamp === "object" &&
+          activity.timestamp !== null &&
+          typeof (activity.timestamp as { toDate?: () => Date }).toDate === "function"
+            ? (activity.timestamp as { toDate: () => Date }).toDate()
+            : (activity.timestamp as string | number)
+        )
+      : new Date(),
+    activityDetails,
   };
 }
-function getNeedsActivity(activity: any) {
+type NeedsActivity = {
+  notes?: string;
+  timestamp?: string | number | { toDate?: () => Date };
+  needsData?: string[];
+  [key: string]: unknown;
+};
+
+function getNeedsActivity(activity: NeedsActivity | undefined) {
   if (!activity) return undefined;
   return {
     notes: activity.notes ?? "",
-    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
+    timestamp: activity.timestamp
+      ? new Date(
+          typeof activity.timestamp === "object" &&
+          activity.timestamp !== null &&
+          typeof (activity.timestamp as { toDate?: () => Date }).toDate === "function"
+            ? (activity.timestamp as { toDate: () => Date }).toDate()
+            : (activity.timestamp as string | number)
+        )
+      : new Date(),
     needsData: activity.needsData ?? [],
   };
 }
-function getFoodActivity(activity: any) {
+type FoodActivity = {
+  notes?: string;
+  timestamp?: string | number | { toDate?: () => Date };
+  foodData?: {
+    item?: string;
+    amount?: "All" | "Some" | "None";
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+};
+
+function getFoodActivity(activity: FoodActivity | undefined) {
   if (!activity) return undefined;
+  let foodData: { item: string; amount: "All" | "Some" | "None" } | undefined = undefined;
+  if (activity.foodData) {
+    foodData = {
+      item: activity.foodData.item ?? "",
+      amount: activity.foodData.amount ?? "All",
+    };
+  }
   return {
     notes: activity.notes ?? "",
-    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
-    foodData: activity.foodData,
+    timestamp: activity.timestamp
+      ? new Date(
+          typeof activity.timestamp === "object" &&
+          activity.timestamp !== null &&
+          typeof (activity.timestamp as { toDate?: () => Date }).toDate === "function"
+            ? (activity.timestamp as { toDate: () => Date }).toDate()
+            : (activity.timestamp as string | number)
+        )
+      : new Date(),
+    foodData,
   };
 }
 
@@ -188,7 +315,7 @@ export default function CaregiverDashboard() {
 
     fetchChildren();
     fetchActivities();
-  }, [selectedChildId, selectedDate]);
+  }, [selectedChildId, selectedDate, fetchActivities]);
 
   useEffect(() => {
     fetchActivities();
@@ -247,7 +374,7 @@ export default function CaregiverDashboard() {
           {activityTypes.map((type) => (
             <Card key={type} className="card-gradient p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">{type}</h2>
+                <h2 className="text-lg font-semibold underline">{type}</h2>
                 <Button size="sm" className="btn-primary" onClick={() => handleAddClick(type)}>
                   + Add
                 </Button>
@@ -256,6 +383,43 @@ export default function CaregiverDashboard() {
                 <div className="space-y-2">
                   {activitiesByType[type].map((activity) => {
                     let summary = null;
+                    // Format timestamp and initials
+                    let metaInfo = null;
+                    // Robust timestamp handling (Firestore Timestamp, string, number)
+                    let date: Date | null = null;
+                    if (activity.timestamp) {
+                      if (
+                        typeof activity.timestamp === "object" &&
+                        activity.timestamp !== null &&
+                        typeof (activity.timestamp as { toDate?: unknown }).toDate === "function"
+                      ) {
+                        // Firestore Timestamp object
+                        date = (activity.timestamp as { toDate: () => Date }).toDate();
+                      } else if (typeof activity.timestamp === "string" || typeof activity.timestamp === "number") {
+                        date = new Date(activity.timestamp);
+                      }
+                    }
+                    const timeString = date ? formatTimestamp(date) : "--";
+                    const timeAgo = date ? formatTimeAgo(date) : "";
+                    // Caregiver initials fallback
+                    let initials = "?";
+                    if (activity.caregiverInitials && typeof activity.caregiverInitials === "string") {
+                      initials = activity.caregiverInitials;
+                    } else if (activity.caregiver && typeof activity.caregiver === "string") {
+                      initials = activity.caregiver;
+                    }
+                    metaInfo = (
+                      <span className="flex items-center gap-2 text-xs text-white/80" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
+                        <span
+                          className="bg-black/20 px-2 py-0.5 rounded font-mono"
+                          title={timeAgo}
+                        >
+                          {timeString}
+                        </span>
+                        <span className="bg-black/20 px-2 py-0.5 rounded font-bold">{initials}</span>
+                      </span>
+                    );
+                    // For summary rows, use flex justify-between to push metaInfo to the far right
                     if (type === "Bathroom" && activity.bathroomData) {
                       const data = activity.bathroomData as { urinated?: boolean; bm?: boolean; noVoid?: boolean };
                       const icons = [];
@@ -263,10 +427,13 @@ export default function CaregiverDashboard() {
                       if (data.bm) icons.push("💩 BM");
                       if (data.noVoid) icons.push("🚫 No Void");
                       summary = (
-                        <div className="flex gap-2 items-center mb-1">
-                          {icons.map((txt, i) => (
-                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>{txt}</span>
-                          ))}
+                        <div className="flex items-center justify-between mb-1 w-full">
+                          <div className="flex gap-2 items-center">
+                            {icons.map((txt, i) => (
+                              <span key={i} className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>{txt}</span>
+                            ))}
+                          </div>
+                          {metaInfo}
                         </div>
                       );
                     } else if (type === "Sleep" && (activity.napData || activity.nap)) {
@@ -277,10 +444,13 @@ export default function CaregiverDashboard() {
                       if (data.partialNap) icons.push("🌙 Partial Nap");
                       if (data.noNap) icons.push("🚫 No Nap");
                       summary = (
-                        <div className="flex gap-2 items-center mb-1">
-                          {icons.map((txt, i) => (
-                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>{txt}</span>
-                          ))}
+                        <div className="flex items-center justify-between mb-1 w-full">
+                          <div className="flex gap-2 items-center">
+                            {icons.map((txt, i) => (
+                              <span key={i} className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>{txt}</span>
+                            ))}
+                          </div>
+                          {metaInfo}
                         </div>
                       );
                     } else if (type === "Activities" && activity.activityDetails) {
@@ -298,10 +468,11 @@ export default function CaregiverDashboard() {
                       const emoji = activityEmojis[details.activityCategory || ""] || "✨";
                       summary = (
                         <div className="mb-1">
-                          <div className="flex gap-2 items-center mb-1">
+                          <div className="flex items-center justify-between mb-1 w-full">
                             <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
                               {emoji} {details.activityCategory}
                             </span>
+                            {metaInfo}
                           </div>
                           {details.detail && (
                             <div className="ml-1 text-xs text-white" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
@@ -315,15 +486,18 @@ export default function CaregiverDashboard() {
                       const data = activity.foodData as { item?: string; amount?: "All" | "Some" | "None" };
                       summary = (
                         <div className="mb-1">
-                          <div className="flex gap-2 items-center mb-1">
+                          <div className="flex items-center justify-between mb-1 w-full">
                             <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
                               🍽️ {data.item}
                             </span>
-                            {data.amount && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/20 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
-                                {data.amount} eaten
-                              </span>
-                            )}
+                            <span className="flex gap-2 items-center">
+                              {data.amount && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/20 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
+                                  {data.amount} eaten
+                                </span>
+                              )}
+                              {metaInfo}
+                            </span>
                           </div>
                         </div>
                       );
@@ -353,9 +527,12 @@ export default function CaregiverDashboard() {
                         );
                       });
                       summary = (
-                        <ul className="mb-1 ml-2 list-disc list-inside">
-                          {needsList}
-                        </ul>
+                        <div className="flex items-center mb-1">
+                          <ul className="mb-1 ml-2 list-disc list-inside flex-1">
+                            {needsList}
+                          </ul>
+                          {metaInfo}
+                        </div>
                       );
                     }
                     return (
@@ -438,7 +615,7 @@ export default function CaregiverDashboard() {
           // activityType prop removed
           selectedDate={selectedDate}
           activityId={selectedActivityId ?? undefined}
-          selectedActivity={getBathroomActivity(selectedActivity)}
+          selectedActivity={getBathroomActivity(selectedActivity ?? undefined)}
         />
       )}
       {selectedChildId && activeActivityType === "Sleep" && (
@@ -470,7 +647,7 @@ export default function CaregiverDashboard() {
           // activityType prop removed
           selectedDate={selectedDate}
           activityId={selectedActivityId ?? undefined}
-          selectedActivity={getNapActivity(selectedActivity)}
+          selectedActivity={getNapActivity(selectedActivity ?? undefined)}
         />
       )}
       {selectedChildId && activeActivityType === "Activities" && (
@@ -502,7 +679,7 @@ export default function CaregiverDashboard() {
           activityType={activeActivityType}
           selectedDate={selectedDate}
           activityId={selectedActivityId ?? undefined}
-          selectedActivity={getActivitiesActivity(selectedActivity)}
+          selectedActivity={getActivitiesActivity(selectedActivity ?? undefined)}
         />
       )}
       {selectedChildId && activeActivityType === "Needs" && (
@@ -534,7 +711,7 @@ export default function CaregiverDashboard() {
           activityType={activeActivityType}
           selectedDate={selectedDate}
           activityId={selectedActivityId ?? undefined}
-          selectedActivity={getNeedsActivity(selectedActivity)}
+          selectedActivity={getNeedsActivity(selectedActivity ?? undefined)}
         />
       )}
       {selectedChildId && activeActivityType === "Food" && (
@@ -566,7 +743,7 @@ export default function CaregiverDashboard() {
           activityType={activeActivityType}
           selectedDate={selectedDate}
           activityId={selectedActivityId ?? undefined}
-          selectedActivity={getFoodActivity(selectedActivity)}
+          selectedActivity={getFoodActivity(selectedActivity ?? undefined)}
         />
       )}
     </div>
