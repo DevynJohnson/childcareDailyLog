@@ -7,7 +7,6 @@ import { Toaster } from "sonner";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = { title: "Child Care Daily Log" };
-
 export default function RootLayout({
   children,
 }: {

@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner'; // ✅ Import toast
 
 export default function EditChildProfilePage() {
   const { role, loading } = useAuth();
@@ -27,33 +28,46 @@ export default function EditChildProfilePage() {
   useEffect(() => {
     if (!childId) return;
     (async () => {
-      const docRef = doc(db, 'children', childId);
-      const snap = await getDoc(docRef);
-      if (!snap.exists()) {
-        alert('Child not found');
-        return router.push('/admin/children');
+      try {
+        const docRef = doc(db, 'children', childId);
+        const snap = await getDoc(docRef);
+        if (!snap.exists()) {
+          toast.error('Child not found');
+          return router.push('/admin/children');
+        }
+        const data = snap.data() as any;
+        setName(data.name);
+        setNotes(data.notes);
+        setAllergies(data.allergies);
+        setParentEmails((data.parentEmails as string[]).join(', '));
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to load child profile');
       }
-      const data = snap.data() as any;
-      setName(data.name);
-      setNotes(data.notes);
-      setAllergies(data.allergies);
-      setParentEmails((data.parentEmails as string[]).join(', '));
     })();
   }, [childId, router]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const emails = parentEmails.split(',').map(e => e.trim()).filter(Boolean);
-    const docRef = doc(db, 'children', childId);
-    await updateDoc(docRef, {
-      name,
-      notes,
-      allergies,
-      parentEmails: emails,
-      updatedAt: new Date(),
-    });
-    alert('Child profile updated');
-    router.push('/admin/children');
+    try {
+      const emails = parentEmails
+        .split(',')
+        .map(e => e.trim())
+        .filter(Boolean);
+      const docRef = doc(db, 'children', childId);
+      await updateDoc(docRef, {
+        name,
+        notes,
+        allergies,
+        parentEmails: emails,
+        updatedAt: new Date(),
+      });
+      toast.success('Child profile updated');
+      router.push('/admin/children');
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      toast.error('Failed to update profile');
+    }
   };
 
   if (loading) return <p>Loading…</p>;
