@@ -137,7 +137,7 @@ export default function ActivitiesModal({
             <option value="Outdoor Play">Outdoor Play</option>
             <option value="Art/Crafts">Art/Crafts</option>
             <option value="Music/Singing">Music/Singing</option>
-            <option value="Reading/Storytime">Reading/Storytime</option>
+            <option value="Books">Books</option>
             <option value="Other Activity">Other Activity</option>
           </select>
 

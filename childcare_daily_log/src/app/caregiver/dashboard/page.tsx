@@ -474,7 +474,7 @@ export default function CaregiverDashboard() {
                         "Outdoor Play": "☀️",
                         "Art/Crafts": "🎨",
                         "Music/Singing": "🎵",
-                        "Reading/Storytime": "📚",
+                        "Books": "📚",
                         "Other Activity": "✨",
                       };
                       const details = activity.activityDetails as { activityCategory?: string; detail?: string };

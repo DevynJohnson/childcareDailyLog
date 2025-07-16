@@ -26,30 +26,18 @@ export default function NavBar() {
           <>
             {role === "admin" && (
               <>
-                <Link href="/admin/dashboard" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
+                <Link href="/admin/dashboard" className="font-semibold hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
                   Admin Dashboard
-                </Link>
-                <Link href="/admin/children" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
-                  Manage Children
-                </Link>
-                <Link href="/admin/caregivers" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
-                  Manage Caregivers
-                </Link>
-                <Link href="/admin/audit" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
-                  Audit Log
-                </Link>
-                <Link href="/admin/invites" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
-                  Invites
                 </Link>
               </>
             )}
             {(role === "caregiver" || role === "admin") && (
-              <Link href="/caregiver/dashboard" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
+              <Link href="/caregiver/dashboard" className="font-semibold hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
                 Caregiver Dashboard
               </Link>
             )}
             {(role === "parent" || role === "admin") && (
-              <Link href="/parent/dashboard" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
+              <Link href="/parent/dashboard" className="font-semibold hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
                 Parent/Guardian Dashboard
               </Link>
             )}
@@ -57,7 +45,7 @@ export default function NavBar() {
         )}
       </div>
 
-      <div className="flex items-center space-x-4 text-indigo-900" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
+      {/* <div className="flex items-center space-x-4 text-indigo-900" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
         {isSuperuser && (
           <select
             onChange={handleRoleChange}
@@ -69,18 +57,17 @@ export default function NavBar() {
             <option value="parent">View as Parent/Guardian</option>
           </select>
         )}
-      </div>
+      </div> */}
 
       <div className="flex flex-col items-end text-right text-indigo-900" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
         {user ? (
           <>
-            {/* Removed user signed in as role text */}
             <button
               onClick={async () => {
                 localStorage.removeItem("roleOverride");
                 await signOut(auth);
               }}
-              className="text-red-500"
+              className="text-red-500 hover:text-white hover:bg-red-600 transition-colors rounded px-2 py-1"
             >
               Logout
             </button>
