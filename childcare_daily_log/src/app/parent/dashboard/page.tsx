@@ -7,6 +7,7 @@ import { db, auth } from "@/lib/firebase";
 import { DayPicker } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import ActivityCard from "@/components/ActivityCard";
 import {
   Select,
   SelectContent,
@@ -28,7 +29,6 @@ type ParentInfo = {
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
 };
 
 type Child = {
@@ -44,6 +44,8 @@ type Child = {
 type Activity = {
   id: string;
   notes?: string;
+  timestamp: Date;
+  lastModifiedBy?: string;
   [key: string]: unknown;
 };
 
@@ -114,10 +116,14 @@ useEffect(() => {
           `children/${selectedChildId}/activities/${dateKey}_${type}/items`
         );
         const snapshot = await getDocs(ref);
-        newActivities[type] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        newActivities[type] = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            timestamp: data.timestamp?.toDate() || new Date(),
+          };
+        }) as Activity[];
       })
     );
 
@@ -207,12 +213,13 @@ useEffect(() => {
               {activitiesByType[type]?.length > 0 ? (
                 <div className="space-y-2">
                   {activitiesByType[type].map((activity) => (
-                    <div
+                    <ActivityCard
                       key={activity.id}
-                      className="border p-2 rounded text-sm bg-muted"
-                    >
-                      {activity.notes || "(no notes)"}
-                    </div>
+                      activity={activity}
+                      activityType={type}
+                      canEdit={false}
+                      showCaregiverInfo={true}
+                    />
                   ))}
                 </div>
               ) : (

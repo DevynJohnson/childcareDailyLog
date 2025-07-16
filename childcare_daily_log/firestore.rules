@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+    
+    function isCaregiver() {
+      return isAuthenticated() && getUserRole() == 'caregiver';
+    }
+    
+    function isParent() {
+      return isAuthenticated() && getUserRole() == 'parent';
+    }
+    
+    function isParentOfChild(childId) {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/children/$(childId)).data.parentEmails.hasAny([request.auth.token.email]);
+    }
+
+    // Users collection - only users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Children collection
+    match /children/{childId} {
+      // Admins can do everything
+      allow read, write: if isAdmin();
+      
+      // Caregivers can read all children and create/update
+      allow read, create, update: if isCaregiver();
+      
+      // Parents can only read their own children
+      allow read: if isParent() && isParentOfChild(childId);
+      
+      // Activities subcollection
+      match /activities/{activityPath}/items/{itemId} {
+        // Admins and caregivers can do everything, including delete
+        allow read, write, delete: if isAdmin() || isCaregiver();
+        
+        // Parents can only read activities for their children
+        allow read: if isParent() && isParentOfChild(childId);
+        
+        // Edit history subcollection
+        match /editHistory/{historyId} {
+          allow read, write: if isAdmin() || isCaregiver();
+          allow read: if isParent() && isParentOfChild(childId);
+        }
+      }
+    // Flat activities collection (for optimized structure)
+    match /activities/{activityId} {
+      allow read, write, delete: if isAdmin() || isCaregiver();
+    }
+    }
+
+    // Caregivers collection - only admins can manage
+    match /caregivers/{caregiverId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Role invites - only admins can manage
+    match /roleInvites/{email} {
+      allow read, write: if isAdmin();
+    }
+
+    // Invites - only admins can manage
+    match /invites/{email} {
+      allow read, write: if isAdmin();
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

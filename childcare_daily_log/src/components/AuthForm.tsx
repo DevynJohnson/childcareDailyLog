@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
+import { showSuccess, showError } from '@/lib/toastUtils';
 
 async function registerUser(email: string, password: string) {
   const userCred = await createUserWithEmailAndPassword(auth, email, password);
@@ -83,22 +84,48 @@ export default function AuthForm() {
     e.preventDefault();
     try {
       if (!isLogin && !isPasswordValid) {
-        alert('Password must meet all the listed requirements.');
+        showError('Password must meet all the listed requirements.');
         return;
       }
 
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
-        alert('Logged in!');
+        showSuccess('Logged in!');
       } else {
         await registerUser(email, password);
-        alert('Account created! Check your inbox to verify your email.');
+        showSuccess('Account created! Check your inbox to verify your email.');
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        alert(err.message);
+        // Handle Firebase auth errors for user-friendly messages
+        const msg = err.message;
+        if (
+          msg.includes('auth/invalid-credential') ||
+          msg.includes('auth/wrong-password') ||
+          msg.includes('auth/user-not-found')
+        ) {
+          showError('Your username or password is incorrect. Please try again.');
+        } else if (
+          msg.includes('auth/too-many-requests')
+        ) {
+          showError('Too many login attempts. Please wait a moment and try again.');
+        } else if (
+          msg.includes('auth/email-already-in-use')
+        ) {
+          showError('This email is already registered. Please log in or use a different email.');
+        } else if (
+          msg.includes('auth/invalid-email')
+        ) {
+          showError('Please enter a valid email address.');
+        } else if (
+          msg.includes('Registration is restricted')
+        ) {
+          showError('Registration is restricted. Please contact an administrator for access.');
+        } else {
+          showError('Oops! Something went wrong, please try again.');
+        }
       } else {
-        alert('An unknown error occurred.');
+        showError('Oops! Something went wrong, please try again.');
       }
     }
   };

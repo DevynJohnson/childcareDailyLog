@@ -1,15 +1,37 @@
 import { toast } from 'sonner';
 
-const toastOptions = { duration: Infinity, dismissible: true };
+export const showSuccess = (message: string, description?: string) => {
+  toast.success(message, {
+    description,
+    duration: 3000,
+  });
+};
 
-export const showSuccess = (title: string, description?: string) =>
-  toast.success(title, { description, ...toastOptions });
+export const showError = (message: string, description?: string) => {
+  toast.error(message, {
+    description,
+    duration: 5000,
+  });
+};
 
-export const showError = (title: string, description?: string) =>
-  toast.error(title, { description, ...toastOptions });
+export const showInfo = (message: string, description?: string) => {
+  toast.info(message, {
+    description,
+    duration: 3000,
+  });
+};
 
-export const showInfo = (title: string, description?: string) =>
-  toast(title, { description, ...toastOptions });
+export const showWarning = (message: string, description?: string) => {
+  toast.warning(message, {
+    description,
+    duration: 4000,
+  });
+};
 
-export const showWarning = (title: string, description?: string) =>
-  toast.warning(title, { description, ...toastOptions });
+export const showLoading = (message: string) => {
+  return toast.loading(message);
+};
+
+export const dismissToast = (toastId: string | number) => {
+  toast.dismiss(toastId);
+};
