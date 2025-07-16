@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { DayPicker } from "react-day-picker";
+import { formatTimestamp, formatTimeAgo } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -42,46 +43,172 @@ type Child = {
 };
 
 // Type guards for modal props
-function getBathroomActivity(activity: any) {
+interface BathroomActivity {
+  notes?: string;
+  timestamp?: string | number | { toDate?: () => Date };
+  bathroomData?: {
+    urinated?: boolean;
+    bm?: boolean;
+    noVoid?: boolean;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+function getBathroomActivity(activity: BathroomActivity | undefined) {
   if (!activity) return undefined;
+  let bathroomData: { urinated: boolean; bm: boolean; noVoid: boolean } | undefined = undefined;
+  if (activity.bathroomData) {
+    bathroomData = {
+      urinated: activity.bathroomData.urinated ?? false,
+      bm: activity.bathroomData.bm ?? false,
+      noVoid: activity.bathroomData.noVoid ?? false,
+    };
+  }
   return {
     notes: activity.notes ?? "",
-    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
-    bathroomData: activity.bathroomData,
+    timestamp: activity.timestamp
+      ? new Date(
+          typeof activity.timestamp === "object" &&
+          activity.timestamp !== null &&
+          typeof (activity.timestamp as { toDate?: () => Date }).toDate === "function"
+            ? (activity.timestamp as { toDate: () => Date }).toDate()
+            : (activity.timestamp as string | number)
+        )
+      : new Date(),
+    bathroomData,
   };
 }
-function getNapActivity(activity: any) {
+type NapActivity = {
+  notes?: string;
+  timestamp?: string | number | { toDate?: () => Date };
+  napData?: {
+    fullNap?: boolean;
+    partialNap?: boolean;
+    noNap?: boolean;
+    [key: string]: unknown;
+  };
+  nap?: {
+    fullNap?: boolean;
+    partialNap?: boolean;
+    noNap?: boolean;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+};
+
+function getNapActivity(activity: NapActivity | undefined) {
   if (!activity) return undefined;
   // Support both napData and nap for backward compatibility
   const napData = activity.napData || activity.nap;
   return {
     notes: activity.notes ?? "",
-    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
+    timestamp: activity.timestamp
+      ? new Date(
+          typeof activity.timestamp === "object" &&
+          activity.timestamp !== null &&
+          typeof (activity.timestamp as { toDate?: () => Date }).toDate === "function"
+            ? (activity.timestamp as { toDate: () => Date }).toDate()
+            : (activity.timestamp as string | number)
+        )
+      : new Date(),
     napData,
   };
 }
-function getActivitiesActivity(activity: any) {
+type ActivitiesActivity = {
+  notes?: string;
+  timestamp?: string | number | { toDate?: () => Date };
+  activityDetails?: {
+    activityCategory?: string;
+    detail?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+};
+
+function getActivitiesActivity(activity: ActivitiesActivity | undefined) {
   if (!activity) return undefined;
+  let activityDetails: { activityCategory: string; detail: string } | undefined = undefined;
+  if (
+    activity.activityDetails &&
+    typeof activity.activityDetails === "object" &&
+    typeof activity.activityDetails.activityCategory === "string" &&
+    typeof activity.activityDetails.detail === "string"
+  ) {
+    activityDetails = {
+      activityCategory: activity.activityDetails.activityCategory,
+      detail: activity.activityDetails.detail,
+    };
+  }
   return {
     notes: activity.notes ?? "",
-    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
-    activityDetails: activity.activityDetails,
+    timestamp: activity.timestamp
+      ? new Date(
+          typeof activity.timestamp === "object" &&
+          activity.timestamp !== null &&
+          typeof (activity.timestamp as { toDate?: () => Date }).toDate === "function"
+            ? (activity.timestamp as { toDate: () => Date }).toDate()
+            : (activity.timestamp as string | number)
+        )
+      : new Date(),
+    activityDetails,
   };
 }
-function getNeedsActivity(activity: any) {
+type NeedsActivity = {
+  notes?: string;
+  timestamp?: string | number | { toDate?: () => Date };
+  needsData?: string[];
+  [key: string]: unknown;
+};
+
+function getNeedsActivity(activity: NeedsActivity | undefined) {
   if (!activity) return undefined;
   return {
     notes: activity.notes ?? "",
-    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
+    timestamp: activity.timestamp
+      ? new Date(
+          typeof activity.timestamp === "object" &&
+          activity.timestamp !== null &&
+          typeof (activity.timestamp as { toDate?: () => Date }).toDate === "function"
+            ? (activity.timestamp as { toDate: () => Date }).toDate()
+            : (activity.timestamp as string | number)
+        )
+      : new Date(),
     needsData: activity.needsData ?? [],
   };
 }
-function getFoodActivity(activity: any) {
+type FoodActivity = {
+  notes?: string;
+  timestamp?: string | number | { toDate?: () => Date };
+  foodData?: {
+    item?: string;
+    amount?: "All" | "Some" | "None";
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+};
+
+function getFoodActivity(activity: FoodActivity | undefined) {
   if (!activity) return undefined;
+  let foodData: { item: string; amount: "All" | "Some" | "None" } | undefined = undefined;
+  if (activity.foodData) {
+    foodData = {
+      item: activity.foodData.item ?? "",
+      amount: activity.foodData.amount ?? "All",
+    };
+  }
   return {
     notes: activity.notes ?? "",
-    timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
-    foodData: activity.foodData,
+    timestamp: activity.timestamp
+      ? new Date(
+          typeof activity.timestamp === "object" &&
+          activity.timestamp !== null &&
+          typeof (activity.timestamp as { toDate?: () => Date }).toDate === "function"
+            ? (activity.timestamp as { toDate: () => Date }).toDate()
+            : (activity.timestamp as string | number)
+        )
+      : new Date(),
+    foodData,
   };
 }
 
@@ -104,7 +231,8 @@ export default function CaregiverDashboard() {
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [activitiesByType, setActivitiesByType] = useState<Record<string, Activity[]>>({});
 
-  const dateKey = selectedDate.toISOString().split("T")[0];
+  // Use local time for dateKey, matching parent dashboard
+  const dateKey = selectedDate.toLocaleDateString('en-CA');
 
   const handleAddClick = (type: string) => {
     setActiveActivityType(type);
@@ -133,7 +261,8 @@ export default function CaregiverDashboard() {
     data: Record<string, unknown>;
     activityId?: string;
   }) {
-    const dateKey = selectedDate.toISOString().split("T")[0];
+    // Use local time for dateKey, matching parent dashboard
+    const dateKey = selectedDate.toLocaleDateString('en-CA');
     const activityRef = doc(
       db,
       `children/${childId}/activities/${dateKey}_${activityType}/items/${activityId || crypto.randomUUID()}`
@@ -188,67 +317,78 @@ export default function CaregiverDashboard() {
 
     fetchChildren();
     fetchActivities();
-  }, [selectedChildId, selectedDate]);
+  }, [selectedChildId, selectedDate, fetchActivities]);
 
   useEffect(() => {
     fetchActivities();
   }, [fetchActivities]);
 
+
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Caregiver Dashboard</h1>
+    <div className="p-6 space-y-6 min-h-screen" style={{ backgroundColor: '#f5f5f4' }}>
+      <h1 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
+        Caregiver Dashboard
+      </h1>
 
-      <div className="max-w-sm">
-        <Select onValueChange={(value) => setSelectedChildId(value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a child" />
-          </SelectTrigger>
-          <SelectContent>
-            {children.map((child) => (
-              <SelectItem key={child.id} value={child.id}>
-                {child.firstName} {child.lastName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-2">
+        <div className="w-80">
+          <Select onValueChange={(value) => setSelectedChildId(value)}>
+            <SelectTrigger className="h-12 text-base w-full bg-white border border-gray-300 shadow-sm">
+              <SelectValue placeholder="Select a child" className="text-gray-800" />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              {children.map((child) => (
+                <SelectItem key={child.id} value={child.id}>
+                  {child.firstName} {child.lastName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="relative rdp inline-block w-80">
+          <Button
+            variant="outline"
+            onClick={() => setShowDatePicker(!showDatePicker)}
+            className="text-base h-12 w-full"
+          >
+            📅 {selectedDate.toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </Button>
 
-      <div className="relative inline-block">
-        <Button
-          variant="outline"
-          onClick={() => setShowDatePicker(!showDatePicker)}
-          className="text-sm"
-        >
-          📅 {selectedDate.toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </Button>
-
-        {showDatePicker && (
-          <div className="absolute z-10 mt-2 bg-white border rounded shadow-lg">
-            <DayPicker
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => {
-                if (date) {
-                  setSelectedDate(date);
-                  setShowDatePicker(false);
-                }
-              }}
-            />
-          </div>
-        )}
+          {showDatePicker && (
+            <div
+              className="absolute z-10 mt-2 border rounded shadow-lg w-full"
+              style={{ background: '#fff' }}
+            >
+              <DayPicker
+                className="rdp"
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  if (date) {
+                    setSelectedDate(date);
+                    setShowDatePicker(false);
+                  }
+                }}
+                style={{ borderRadius: 8, padding: 8 }}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {selectedChildId && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {activityTypes.map((type) => (
             <Card key={type} className="card-gradient p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">{type}</h2>
-                <Button size="sm" className="btn-primary" onClick={() => handleAddClick(type)}>
+              <div className="relative flex items-center justify-between">
+                <h2 className="text-2xl font-bold underline absolute left-1/2 transform -translate-x-1/2 w-full text-center pointer-events-none select-none">
+                  {type}
+                </h2>
+                <Button size="sm" className="btn-primary ml-auto z-10" onClick={() => handleAddClick(type)}>
                   + Add
                 </Button>
               </div>
@@ -256,6 +396,43 @@ export default function CaregiverDashboard() {
                 <div className="space-y-2">
                   {activitiesByType[type].map((activity) => {
                     let summary = null;
+                    // Format timestamp and initials
+                    let metaInfo = null;
+                    // Robust timestamp handling (Firestore Timestamp, string, number)
+                    let date: Date | null = null;
+                    if (activity.timestamp) {
+                      if (
+                        typeof activity.timestamp === "object" &&
+                        activity.timestamp !== null &&
+                        typeof (activity.timestamp as { toDate?: unknown }).toDate === "function"
+                      ) {
+                        // Firestore Timestamp object
+                        date = (activity.timestamp as { toDate: () => Date }).toDate();
+                      } else if (typeof activity.timestamp === "string" || typeof activity.timestamp === "number") {
+                        date = new Date(activity.timestamp);
+                      }
+                    }
+                    const timeString = date ? formatTimestamp(date) : "--";
+                    const timeAgo = date ? formatTimeAgo(date) : "";
+                    // Caregiver initials fallback
+                    let initials = "?";
+                    if (activity.caregiverInitials && typeof activity.caregiverInitials === "string") {
+                      initials = activity.caregiverInitials;
+                    } else if (activity.caregiver && typeof activity.caregiver === "string") {
+                      initials = activity.caregiver;
+                    }
+                    metaInfo = (
+                      <span className="flex items-center gap-2 text-xs text-white/80" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
+                        <span
+                          className="bg-black/20 px-2 py-0.5 rounded font-mono"
+                          title={timeAgo}
+                        >
+                          {timeString}
+                        </span>
+                        <span className="bg-black/20 px-2 py-0.5 rounded font-bold">{initials}</span>
+                      </span>
+                    );
+                    // For summary rows, use flex justify-between to push metaInfo to the far right
                     if (type === "Bathroom" && activity.bathroomData) {
                       const data = activity.bathroomData as { urinated?: boolean; bm?: boolean; noVoid?: boolean };
                       const icons = [];
@@ -263,10 +440,13 @@ export default function CaregiverDashboard() {
                       if (data.bm) icons.push("💩 BM");
                       if (data.noVoid) icons.push("🚫 No Void");
                       summary = (
-                        <div className="flex gap-2 items-center mb-1">
-                          {icons.map((txt, i) => (
-                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>{txt}</span>
-                          ))}
+                        <div className="flex items-center justify-between mb-1 w-full">
+                          <div className="flex gap-2 items-center">
+                            {icons.map((txt, i) => (
+                              <span key={i} className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>{txt}</span>
+                            ))}
+                          </div>
+                          {metaInfo}
                         </div>
                       );
                     } else if (type === "Sleep" && (activity.napData || activity.nap)) {
@@ -277,10 +457,13 @@ export default function CaregiverDashboard() {
                       if (data.partialNap) icons.push("🌙 Partial Nap");
                       if (data.noNap) icons.push("🚫 No Nap");
                       summary = (
-                        <div className="flex gap-2 items-center mb-1">
-                          {icons.map((txt, i) => (
-                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>{txt}</span>
-                          ))}
+                        <div className="flex items-center justify-between mb-1 w-full">
+                          <div className="flex gap-2 items-center">
+                            {icons.map((txt, i) => (
+                              <span key={i} className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>{txt}</span>
+                            ))}
+                          </div>
+                          {metaInfo}
                         </div>
                       );
                     } else if (type === "Activities" && activity.activityDetails) {
@@ -298,10 +481,11 @@ export default function CaregiverDashboard() {
                       const emoji = activityEmojis[details.activityCategory || ""] || "✨";
                       summary = (
                         <div className="mb-1">
-                          <div className="flex gap-2 items-center mb-1">
+                          <div className="flex items-center justify-between mb-1 w-full">
                             <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
                               {emoji} {details.activityCategory}
                             </span>
+                            {metaInfo}
                           </div>
                           {details.detail && (
                             <div className="ml-1 text-xs text-white" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
@@ -315,15 +499,18 @@ export default function CaregiverDashboard() {
                       const data = activity.foodData as { item?: string; amount?: "All" | "Some" | "None" };
                       summary = (
                         <div className="mb-1">
-                          <div className="flex gap-2 items-center mb-1">
+                          <div className="flex items-center justify-between mb-1 w-full">
                             <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
                               🍽️ {data.item}
                             </span>
-                            {data.amount && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/20 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
-                                {data.amount} eaten
-                              </span>
-                            )}
+                            <span className="flex gap-2 items-center">
+                              {data.amount && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/20 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
+                                  {data.amount} eaten
+                                </span>
+                              )}
+                              {metaInfo}
+                            </span>
                           </div>
                         </div>
                       );
@@ -353,9 +540,12 @@ export default function CaregiverDashboard() {
                         );
                       });
                       summary = (
-                        <ul className="mb-1 ml-2 list-disc list-inside">
-                          {needsList}
-                        </ul>
+                        <div className="flex items-center mb-1">
+                          <ul className="mb-1 ml-2 list-disc list-inside flex-1">
+                            {needsList}
+                          </ul>
+                          {metaInfo}
+                        </div>
                       );
                     }
                     return (
@@ -423,22 +613,35 @@ export default function CaregiverDashboard() {
             });
             setIsModalOpen(false);
           }}
-          onDelete={async () => {
-            if (!selectedChildId || !selectedActivityId || !activeActivityType) return;
-            const dateKey = selectedDate.toISOString().split("T")[0];
-            const activityRef = doc(
-              db,
-              `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
-            );
-            await deleteDoc(activityRef);
-            setIsModalOpen(false);
-            fetchActivities();
-          }}
+      onDelete={async () => {
+        if (!selectedChildId || !selectedActivityId || !activeActivityType || !selectedActivity) return;
+        // Use the activity's timestamp to determine the correct dateKey
+        let activityDate: Date | null = null;
+        if (selectedActivity.timestamp) {
+          if (
+            typeof selectedActivity.timestamp === "object" &&
+            selectedActivity.timestamp !== null &&
+            typeof (selectedActivity.timestamp as { toDate?: unknown }).toDate === "function"
+          ) {
+            activityDate = (selectedActivity.timestamp as { toDate: () => Date }).toDate();
+          } else if (typeof selectedActivity.timestamp === "string" || typeof selectedActivity.timestamp === "number") {
+            activityDate = new Date(selectedActivity.timestamp);
+          }
+        }
+        const dateKey = activityDate ? activityDate.toLocaleDateString('en-CA') : selectedDate.toLocaleDateString('en-CA');
+        const activityRef = doc(
+          db,
+          `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
+        );
+        await deleteDoc(activityRef);
+        setIsModalOpen(false);
+        fetchActivities();
+      }}
           childId={selectedChildId}
           // activityType prop removed
           selectedDate={selectedDate}
           activityId={selectedActivityId ?? undefined}
-          selectedActivity={getBathroomActivity(selectedActivity)}
+          selectedActivity={getBathroomActivity(selectedActivity ?? undefined)}
         />
       )}
       {selectedChildId && activeActivityType === "Sleep" && (
@@ -455,22 +658,34 @@ export default function CaregiverDashboard() {
             });
             setIsModalOpen(false);
           }}
-          onDelete={async () => {
-            if (!selectedChildId || !selectedActivityId || !activeActivityType) return;
-            const dateKey = selectedDate.toISOString().split("T")[0];
-            const activityRef = doc(
-              db,
-              `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
-            );
-            await deleteDoc(activityRef);
-            setIsModalOpen(false);
-            fetchActivities();
-          }}
+      onDelete={async () => {
+        if (!selectedChildId || !selectedActivityId || !activeActivityType || !selectedActivity) return;
+        let activityDate: Date | null = null;
+        if (selectedActivity.timestamp) {
+          if (
+            typeof selectedActivity.timestamp === "object" &&
+            selectedActivity.timestamp !== null &&
+            typeof (selectedActivity.timestamp as { toDate?: unknown }).toDate === "function"
+          ) {
+            activityDate = (selectedActivity.timestamp as { toDate: () => Date }).toDate();
+          } else if (typeof selectedActivity.timestamp === "string" || typeof selectedActivity.timestamp === "number") {
+            activityDate = new Date(selectedActivity.timestamp);
+          }
+        }
+        const dateKey = activityDate ? activityDate.toLocaleDateString('en-CA') : selectedDate.toLocaleDateString('en-CA');
+        const activityRef = doc(
+          db,
+          `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
+        );
+        await deleteDoc(activityRef);
+        setIsModalOpen(false);
+        fetchActivities();
+      }}
           childId={selectedChildId}
           // activityType prop removed
           selectedDate={selectedDate}
           activityId={selectedActivityId ?? undefined}
-          selectedActivity={getNapActivity(selectedActivity)}
+          selectedActivity={getNapActivity(selectedActivity ?? undefined)}
         />
       )}
       {selectedChildId && activeActivityType === "Activities" && (
@@ -487,22 +702,34 @@ export default function CaregiverDashboard() {
             });
             setIsModalOpen(false);
           }}
-          onDelete={async () => {
-            if (!selectedChildId || !selectedActivityId || !activeActivityType) return;
-            const dateKey = selectedDate.toISOString().split("T")[0];
-            const activityRef = doc(
-              db,
-              `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
-            );
-            await deleteDoc(activityRef);
-            setIsModalOpen(false);
-            fetchActivities();
-          }}
+      onDelete={async () => {
+        if (!selectedChildId || !selectedActivityId || !activeActivityType || !selectedActivity) return;
+        let activityDate: Date | null = null;
+        if (selectedActivity.timestamp) {
+          if (
+            typeof selectedActivity.timestamp === "object" &&
+            selectedActivity.timestamp !== null &&
+            typeof (selectedActivity.timestamp as { toDate?: unknown }).toDate === "function"
+          ) {
+            activityDate = (selectedActivity.timestamp as { toDate: () => Date }).toDate();
+          } else if (typeof selectedActivity.timestamp === "string" || typeof selectedActivity.timestamp === "number") {
+            activityDate = new Date(selectedActivity.timestamp);
+          }
+        }
+        const dateKey = activityDate ? activityDate.toLocaleDateString('en-CA') : selectedDate.toLocaleDateString('en-CA');
+        const activityRef = doc(
+          db,
+          `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
+        );
+        await deleteDoc(activityRef);
+        setIsModalOpen(false);
+        fetchActivities();
+      }}
           childId={selectedChildId}
           activityType={activeActivityType}
           selectedDate={selectedDate}
           activityId={selectedActivityId ?? undefined}
-          selectedActivity={getActivitiesActivity(selectedActivity)}
+          selectedActivity={getActivitiesActivity(selectedActivity ?? undefined)}
         />
       )}
       {selectedChildId && activeActivityType === "Needs" && (
@@ -519,22 +746,34 @@ export default function CaregiverDashboard() {
             });
             setIsModalOpen(false);
           }}
-          onDelete={async () => {
-            if (!selectedChildId || !selectedActivityId || !activeActivityType) return;
-            const dateKey = selectedDate.toISOString().split("T")[0];
-            const activityRef = doc(
-              db,
-              `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
-            );
-            await deleteDoc(activityRef);
-            setIsModalOpen(false);
-            fetchActivities();
-          }}
+      onDelete={async () => {
+        if (!selectedChildId || !selectedActivityId || !activeActivityType || !selectedActivity) return;
+        let activityDate: Date | null = null;
+        if (selectedActivity.timestamp) {
+          if (
+            typeof selectedActivity.timestamp === "object" &&
+            selectedActivity.timestamp !== null &&
+            typeof (selectedActivity.timestamp as { toDate?: unknown }).toDate === "function"
+          ) {
+            activityDate = (selectedActivity.timestamp as { toDate: () => Date }).toDate();
+          } else if (typeof selectedActivity.timestamp === "string" || typeof selectedActivity.timestamp === "number") {
+            activityDate = new Date(selectedActivity.timestamp);
+          }
+        }
+        const dateKey = activityDate ? activityDate.toLocaleDateString('en-CA') : selectedDate.toLocaleDateString('en-CA');
+        const activityRef = doc(
+          db,
+          `children/${selectedChildId}/activities/${dateKey}_${activeActivityType}/items/${selectedActivityId}`
+        );
+        await deleteDoc(activityRef);
+        setIsModalOpen(false);
+        fetchActivities();
+      }}
           childId={selectedChildId}
           activityType={activeActivityType}
           selectedDate={selectedDate}
           activityId={selectedActivityId ?? undefined}
-          selectedActivity={getNeedsActivity(selectedActivity)}
+          selectedActivity={getNeedsActivity(selectedActivity ?? undefined)}
         />
       )}
       {selectedChildId && activeActivityType === "Food" && (
@@ -566,7 +805,7 @@ export default function CaregiverDashboard() {
           activityType={activeActivityType}
           selectedDate={selectedDate}
           activityId={selectedActivityId ?? undefined}
-          selectedActivity={getFoodActivity(selectedActivity)}
+          selectedActivity={getFoodActivity(selectedActivity ?? undefined)}
         />
       )}
     </div>

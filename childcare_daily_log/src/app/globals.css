@@ -48,7 +48,7 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #f8fafc;
+  --background: #f5f5f4;
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
@@ -133,7 +133,7 @@
     position: relative;
     z-index: 1;
   }
-
+  
   /* Primary button accent background */
   .btn-primary {
     background: #0f005e !important;
@@ -202,6 +202,12 @@
     padding: 0.75rem 1rem;
     box-sizing: border-box;
   }
+  select, input[type="date"] {
+    background-color: #fff !important;
+    color: #1e293b !important;
+    border: 1px solid #d1d5db;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
   label {
     font-size: 1rem;
     margin-bottom: 0.5rem;
@@ -221,4 +227,16 @@
   .spacer {
     height: 2rem;
   }
+}
+
+/* Force DayPicker calendar popup and all children to have a white background */
+.rdp, .rdp *, .react-day-picker, .react-day-picker * {
+  background: #fff !important;
+  background-color: #fff !important;
+}
+/* Force DayPicker calendar popup to have a white background */
+.rdp, .react-day-picker {
+  background: #fff !important;
+  border-radius: 8px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.08);
 }

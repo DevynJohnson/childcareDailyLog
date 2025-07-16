@@ -16,8 +16,8 @@ export default function NavBar() {
   };
 
   return (
-    <nav className="bg-dark shadow p-4 flex justify-between items-center">
-      <div className="flex items-center space-x-4">
+    <nav className="shadow p-4 flex justify-between items-center" style={{ background: '#479132' }}>
+      <div className="flex items-center gap-8 text-indigo-900" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
         <Link href="/" className="text-xl font-bold">
           ChildCareApp
         </Link>
@@ -26,30 +26,30 @@ export default function NavBar() {
           <>
             {role === "admin" && (
               <>
-                <Link href="/admin/dashboard" className="hover:underline">
+                <Link href="/admin/dashboard" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
                   Admin Dashboard
                 </Link>
-                <Link href="/admin/children" className="hover:underline">
+                <Link href="/admin/children" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
                   Manage Children
                 </Link>
-                <Link href="/admin/caregivers" className="hover:underline">
+                <Link href="/admin/caregivers" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
                   Manage Caregivers
                 </Link>
-                <Link href="/admin/audit" className="hover:underline">
+                <Link href="/admin/audit" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
                   Audit Log
                 </Link>
-                <Link href="/admin/invites" className="hover:underline">
+                <Link href="/admin/invites" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
                   Invites
                 </Link>
               </>
             )}
             {(role === "caregiver" || role === "admin") && (
-              <Link href="/caregiver/dashboard" className="hover:underline">
+              <Link href="/caregiver/dashboard" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
                 Caregiver Dashboard
               </Link>
             )}
             {(role === "parent" || role === "admin") && (
-              <Link href="/parent/dashboard" className="hover:underline">
+              <Link href="/parent/dashboard" className="hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
                 Parent/Guardian Dashboard
               </Link>
             )}
@@ -57,12 +57,12 @@ export default function NavBar() {
         )}
       </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-4 text-indigo-900" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
         {isSuperuser && (
           <select
             onChange={handleRoleChange}
             value={role ?? ""}
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 bg-white text-indigo-900 shadow"
           >
             <option value="admin">View as Admin</option>
             <option value="caregiver">View as Caregiver</option>
@@ -71,13 +71,10 @@ export default function NavBar() {
         )}
       </div>
 
-      <div className="flex flex-col items-end text-right">
+      <div className="flex flex-col items-end text-right text-indigo-900" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
         {user ? (
           <>
-            <p className="text-sm text-gray-600 mb-1">
-              {user.email} signed in as{" "}
-              <span className="font-semibold">{role}</span>
-            </p>
+            {/* Removed user signed in as role text */}
             <button
               onClick={async () => {
                 localStorage.removeItem("roleOverride");
