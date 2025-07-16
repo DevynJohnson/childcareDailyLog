@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import type { CaregiverInfo } from '@/types/caregiver';
 
 type Role = 'admin' | 'caregiver' | 'parent';
 
@@ -12,6 +13,7 @@ interface AuthContextType {
   role: Role | null;
   loading: boolean;
   isSuperuser: boolean;
+  caregiverInfo: CaregiverInfo | null;
   setRoleOverride: (newRole: Role) => void;
 }
 
@@ -20,6 +22,7 @@ const AuthContext = createContext<AuthContextType>({
   role: null,
   loading: true,
   isSuperuser: false,
+  caregiverInfo: null,
   setRoleOverride: () => {},
 });
 
@@ -29,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isSuperuser, setIsSuperuser] = useState(false);
   const [loading, setLoading] = useState(true);
   const [roleOverride, setRoleOverrideState] = useState<Role | null>(null);
+  const [caregiverInfo, setCaregiverInfo] = useState<CaregiverInfo | null>(null);
 
   // 🔁 Load role override from localStorage on mount
   useEffect(() => {
@@ -49,13 +53,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const data = snap.data();
           setRole(data.role);
           setIsSuperuser(!!data.isSuperuser);
+          
+          // If user is a caregiver, fetch their profile info
+          if (data.role === 'caregiver') {
+            const caregiverSnap = await getDoc(doc(db, 'caregivers', firebaseUser.uid));
+            if (caregiverSnap.exists()) {
+              setCaregiverInfo(caregiverSnap.data() as CaregiverInfo);
+            }
+          } else {
+            setCaregiverInfo(null);
+          }
         } else {
           setRole(null);
           setIsSuperuser(false);
+          setCaregiverInfo(null);
         }
       } else {
         setRole(null);
         setIsSuperuser(false);
+        setCaregiverInfo(null);
       }
 
       setLoading(false);
@@ -79,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: effectiveRole,
         loading,
         isSuperuser,
+        caregiverInfo,
         setRoleOverride,
       }}
     >

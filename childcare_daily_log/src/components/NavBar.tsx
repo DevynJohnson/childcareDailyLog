@@ -32,6 +32,12 @@ export default function NavBar() {
                 <Link href="/admin/children" className="hover:underline">
                   Manage Children
                 </Link>
+                <Link href="/admin/caregivers" className="hover:underline">
+                  Manage Caregivers
+                </Link>
+                <Link href="/admin/audit" className="hover:underline">
+                  Audit Log
+                </Link>
                 <Link href="/admin/invites" className="hover:underline">
                   Invites
                 </Link>
