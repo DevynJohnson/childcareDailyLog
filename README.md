@@ -1,8 +1,8 @@
 # childcareDailyLog
-            
+
 ## Description
-<p>An application allowing caregivers to track the daily activities of children in their care. Parents can see real-time updates throughout the including the child's eating habits, play sessions, nap times, bathroom activity and more. It can also serve as a communication platform between the care team and parents, allowing caregivers to indicate if the child needs any supplies (diapers, wipes, extra clothing, etc) or updates for the care center such as activites and events.</p>
-            
+childcareDailyLog is a web application designed for caregivers to efficiently track and log the daily activities of children in their care. Parents receive real-time updates on their child's eating habits, play sessions, nap times, bathroom activity, and more. The platform also facilitates communication between caregivers and parents, allowing for supply requests and important announcements regarding activities and events.
+
 ## Table of Contents
 - [Installation](#installation)
 - [Usage](#usage)
@@ -10,30 +10,45 @@
 - [Testing](#testing)
 - [Questions](#questions)
 - [License](#license)
-            
+
 ## Installation
-<p>No installation required.</p>
+No installation required. The application is deployed and accessible via the web.
             
 ## Usage
-<p>This application is designed to be used by caregivers of children to log updates about the daily activities of children in their care, which can then be viewed by parents in real-time.</p>
+Caregivers can log daily updates for each child, which are instantly available to parents. The platform supports communication for supply needs and center updates, ensuring seamless collaboration between caregivers and families.
             
 ## Credits
 
 ### Author
-<p>Devyn Johnson | <a href="https://www.github.com/DevynJohnson">Github Profile</a> | <a href="https://devynjohnson.me">Portfolio</a></p>
-        
-### Collaborators and Contribution Instructions
+Devyn Johnson  
+[GitHub Profile](https://www.github.com/DevynJohnson) | [Portfolio](https://devynjohnson.me)
 
-<p>If you would like to contribute to this project, please <a href="mailto:dljohnson1313@gmail.com">email me</a>.</p>
-            
-### Third-Party Assets
-<ul>
-<li><a href="https://nextjs.org/">Next.js - Frontend Framework</a></li>
-<li><a href="https://firebase.google.com/">Firebase - Database</a></li>
+### Contribution
+If you would like to contribute to this project, please [email me](mailto:dljohnson1313@gmail.com).
 
+### Third-Party Packages & Assets
+- [Next.js](https://nextjs.org/) – React framework for server-side rendering and static site generation
+- [Firebase](https://firebase.google.com/) – Authentication, Firestore database, and hosting
+- [React](https://react.dev/) – UI library
+- [Shadcn UI](https://ui.shadcn.com/) – UI components
+- [Resend](https://resend.com/) – Transactional email service (for user invites)
+- [Tailwind CSS](https://tailwindcss.com/) – Utility-first CSS framework
+- [Zod](https://zod.dev/) – TypeScript-first schema validation
+- [date-fns](https://date-fns.org/) – Modern JavaScript date utility library
+- [clsx](https://github.com/lukeed/clsx) – Utility for constructing className strings
+- [Lucide React](https://lucide.dev/) – Icon library for React
+- [React Hook Form](https://react-hook-form.com/) – Form state management
+- [React Firebase Hooks](https://github.com/CSFrequency/react-firebase-hooks) – Hooks for Firebase
+- [Jest](https://jestjs.io/) – JavaScript testing framework
+- [Testing Library](https://testing-library.com/) – UI testing utilities
+
+*If you notice a missing package, please submit a pull request or contact the author.*
 
 ## Testing
-<p>If you experience any issues with the application, please reach out to dljohnson1313@gmail.com and explain the issue with as much detail as possible - include any error messages or error codes that you see.</p>
+If you encounter any issues, please contact [dljohnson1313@gmail.com](mailto:dljohnson1313@gmail.com) with a detailed description and any relevant error messages or codes.
             
+## Questions
+For questions or support, please reach out via [email](mailto:dljohnson1313@gmail.com).
+
 ## License
-<p>This project has no open-source license and is under exclusive copyright. Do no attempt to copy, distribute, modify or sell code from this repository without express written permission from the author. </p>
+This project is not open-source and is under exclusive copyright. Do not copy, distribute, modify, or sell code from this repository without express written permission from the author.
