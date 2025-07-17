@@ -5,39 +5,40 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import "../app/globals.css";
 
 export default function NavBar() {
   const { user, role, loading, isSuperuser, setRoleOverride } = useAuth();
 
   if (loading) return null;
 
-  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRoleOverride(e.target.value as "admin" | "caregiver" | "parent");
-  };
+  // const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //   setRoleOverride(e.target.value as "admin" | "caregiver" | "parent");
+  // };
 
   return (
-    <nav className="shadow p-4 flex justify-between items-center" style={{ background: '#479132' }}>
-      <div className="flex items-center gap-8 text-indigo-900" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
-        <Link href="/" className="text-xl font-bold">
-          ChildCareApp
+    <nav className="shadow p-4 flex justify-between items-center" style={{ background: 'linear-gradient(90deg, #479132 0%, #6fcf97 100%)' }}>
+      <div className="flex items-center gap-8" style={{ color: 'var(--dark-indigo)' }}>
+        <Link href="/" className="nav-header text-xl font-bold">
+          Childcare Daily Log
         </Link>
 
         {user && (
           <>
             {role === "admin" && (
               <>
-                <Link href="/admin/dashboard" className="font-semibold hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
+                <Link href="/admin/dashboard" className="font-semibold hover:text-white hover:bg-[#0f005e] rounded px-2 py-1 transition-colors">
                   Admin Dashboard
                 </Link>
               </>
             )}
             {(role === "caregiver" || role === "admin") && (
-              <Link href="/caregiver/dashboard" className="font-semibold hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
+              <Link href="/caregiver/dashboard" className="font-semibold hover:text-white hover:bg-[#0f005e] rounded px-2 py-1 transition-colors">
                 Caregiver Dashboard
               </Link>
             )}
             {(role === "parent" || role === "admin") && (
-              <Link href="/parent/dashboard" className="font-semibold hover:text-white hover:bg-[#312e81] rounded px-2 py-1 transition-colors">
+              <Link href="/parent/dashboard" className="font-semibold hover:text-white hover:bg-[#0f005e] rounded px-2 py-1 transition-colors">
                 Parent/Guardian Dashboard
               </Link>
             )}
@@ -45,7 +46,7 @@ export default function NavBar() {
         )}
       </div>
 
-      {/* <div className="flex items-center space-x-4 text-indigo-900" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
+      {/* <div className="flex items-center space-x-4 text-indigo-900" style={{ textShadow: '0 0 1px #000' }}>
         {isSuperuser && (
           <select
             onChange={handleRoleChange}
@@ -59,7 +60,7 @@ export default function NavBar() {
         )}
       </div> */}
 
-      <div className="flex flex-col items-end text-right text-indigo-900" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
+      <div className="flex flex-col items-end text-right text-indigo-900" style={{ textShadow: '0 0 1px #000' }}>
         {user ? (
           <>
             <button
