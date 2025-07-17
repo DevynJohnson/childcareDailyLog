@@ -123,23 +123,35 @@ export default function ActivitiesModal({
         </div>
 
         <div className="space-y-4">
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-medium mb-1">
             Choose Activity Type
           </label>
-          <select
-            value={activityCategory}
-            onChange={(e) => setActivityCategory(e.target.value)}
-            className="w-full border rounded px-3 py-2 bg-white dark:bg-zinc-800"
-          >
-            <option value="">Select</option>
-            <option value="Toys">Toys</option>
-            <option value="Games">Games</option>
-            <option value="Outdoor Play">Outdoor Play</option>
-            <option value="Art/Crafts">Art/Crafts</option>
-            <option value="Music/Singing">Music/Singing</option>
-            <option value="Books">Books</option>
-            <option value="Other Activity">Other Activity</option>
-          </select>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {[
+              "Toys",
+              "Games",
+              "Outdoor Play",
+              "Art/Crafts",
+              "Music/Singing",
+              "Books",
+              "Other Activity"
+            ].map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={`rounded-full px-4 py-2 font-medium transition-colors
+                  ${activityCategory === option
+                    ? "bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 text-white"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200"}
+                  hover:bg-indigo-100 dark:hover:bg-indigo-900
+                `}
+                onClick={() => setActivityCategory(option)}
+                aria-pressed={activityCategory === option}
+              >
+                {activityEmojis[option] || "✨"} {option}
+              </button>
+            ))}
+          </div>
 
           {activityCategory && (
             <div className="flex items-center gap-2">

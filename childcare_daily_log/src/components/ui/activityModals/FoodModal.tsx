@@ -6,7 +6,6 @@ import { formatLocalDateTime } from "@/lib/timestamp";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
-import { Checkbox } from "../../ui/checkbox";
 
 type Props = {
   isOpen: boolean;
@@ -125,14 +124,20 @@ export default function FoodModal({
           <label className="block text-sm font-medium">Amount Eaten</label>
           <div className="flex gap-4">
             {["All", "Some", "None"].map((option) => (
-              <label key={option} className="flex items-center space-x-2 cursor-pointer">
-                <Checkbox
-                  checked={foodAmount === option}
-                  onCheckedChange={() => setFoodAmount((prev) => (prev === option ? "" : option as any))}
-                  className="w-5 h-5"
-                />
-                <span className="text-base">{option}</span>
-              </label>
+              <button
+                key={option}
+                type="button"
+                className={`rounded-full px-4 py-2 font-medium transition-colors
+                  ${foodAmount === option
+                    ? "bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 text-white"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200"}
+                  hover:bg-indigo-100 dark:hover:bg-indigo-900
+                `}
+                onClick={() => setFoodAmount(option as "All" | "Some" | "None")}
+                aria-pressed={foodAmount === option}
+              >
+                {option}
+              </button>
             ))}
           </div>
         </div>

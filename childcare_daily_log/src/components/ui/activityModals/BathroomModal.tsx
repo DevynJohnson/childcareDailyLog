@@ -3,7 +3,6 @@ import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatLocalDateTime } from "@/lib/timestamp";
 import { Button } from "../../ui/button";
-import { Checkbox } from "../../ui/checkbox";
 import { Textarea } from "../../ui/textarea";
 import { Input } from "../../ui/input";
 
@@ -123,31 +122,49 @@ export default function BathroomModal({
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="space-y-2">
-          <label className="flex items-center space-x-2">
-            <Checkbox
-              checked={urinated}
-              disabled={noVoid}
-              onCheckedChange={(v) => setUrinated(!!v)}
-            />
-            <span className={noVoid ? "text-muted-foreground" : ""}>Urinated</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <Checkbox
-              checked={bm}
-              disabled={noVoid}
-              onCheckedChange={(v) => setBm(!!v)}
-            />
-            <span className={noVoid ? "text-muted-foreground" : ""}>BM</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <Checkbox
-              checked={noVoid}
-              disabled={urinated || bm}
-              onCheckedChange={(v) => setNoVoid(!!v)}
-            />
-            <span className={urinated || bm ? "text-muted-foreground" : ""}>No Void</span>
-          </label>
+        <div className="flex gap-2 mb-2">
+          <button
+            type="button"
+            className={`rounded-full px-4 py-2 font-medium transition-colors
+              ${urinated
+                ? "bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 text-white"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200"}
+              ${noVoid ? "opacity-50 cursor-not-allowed" : "hover:bg-indigo-100 dark:hover:bg-indigo-900"}
+            `}
+            disabled={noVoid}
+            onClick={() => setUrinated((v) => !v)}
+            aria-pressed={urinated}
+          >
+            Urinated
+          </button>
+          <button
+            type="button"
+            className={`rounded-full px-4 py-2 font-medium transition-colors
+              ${bm
+                ? "bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 text-white"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200"}
+              ${noVoid ? "opacity-50 cursor-not-allowed" : "hover:bg-indigo-100 dark:hover:bg-indigo-900"}
+            `}
+            disabled={noVoid}
+            onClick={() => setBm((v) => !v)}
+            aria-pressed={bm}
+          >
+            BM
+          </button>
+          <button
+            type="button"
+            className={`rounded-full px-4 py-2 font-medium transition-colors
+              ${noVoid
+                ? "bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 text-white"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200"}
+              ${(urinated || bm) ? "opacity-50 cursor-not-allowed" : "hover:bg-indigo-100 dark:hover:bg-indigo-900"}
+            `}
+            disabled={urinated || bm}
+            onClick={() => setNoVoid((v) => !v)}
+            aria-pressed={noVoid}
+          >
+            No Void
+          </button>
         </div>
         <Textarea
           placeholder="Add any notes..."
