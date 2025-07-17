@@ -388,7 +388,12 @@ export default function CaregiverDashboard() {
                 <h2 className="text-2xl font-bold underline absolute left-1/2 transform -translate-x-1/2 w-full text-center pointer-events-none select-none">
                   {type}
                 </h2>
-                <Button size="sm" className="btn-primary ml-auto z-10" onClick={() => handleAddClick(type)}>
+                <Button
+                  size="sm"
+                  className="btn-primary ml-auto z-10"
+                  onClick={() => handleAddClick(type)}
+                  style={{ transition: 'background 0.2s, color 0.2s' }}
+                >
                   + Add
                 </Button>
               </div>

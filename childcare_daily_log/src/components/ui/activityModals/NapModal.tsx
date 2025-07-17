@@ -5,7 +5,6 @@ import { formatLocalDateTime } from "@/lib/timestamp";
 import { Button } from "../../ui/button";
 import { Textarea } from "../../ui/textarea";
 import { Input } from "../../ui/input";
-import { Checkbox } from "../../ui/checkbox";
 
 type Props = {
   isOpen: boolean;
@@ -108,49 +107,58 @@ export default function NapModal({
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="space-y-2">
-          <label className="flex items-center space-x-2">
-            <Checkbox
-              checked={fullNap}
-              disabled={partialNap || noNap}
-              onCheckedChange={(v) => {
-                setFullNap(!!v);
-                if (!!v) {
-                  setPartialNap(false);
-                  setNoNap(false);
-                }
-              }}
-            />
-            <span className={fullNap ? "text-muted-foreground" : ""}>Full Nap</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <Checkbox
-              checked={partialNap}
-              disabled={fullNap || noNap}
-              onCheckedChange={(v) => {
-                setPartialNap(!!v);
-                if (!!v) {
-                  setFullNap(false);
-                  setNoNap(false);
-                }
-              }}
-            />
-            <span className={partialNap ? "text-muted-foreground" : ""}>Partial Nap</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <Checkbox
-              checked={noNap}
-              disabled={fullNap || partialNap}
-              onCheckedChange={(v) => {
-                setNoNap(!!v);
-                if (!!v) {
-                  setFullNap(false);
-                  setPartialNap(false);
-                }
-              }}
-            />
-            <span className={noNap ? "text-muted-foreground" : ""}>No Nap</span>
-          </label>
+        <div className="flex gap-2 mb-2">
+          <button
+            type="button"
+            className={`rounded-full px-4 py-2 font-medium transition-colors
+              ${fullNap
+                ? "bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 text-white"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200"}
+              hover:bg-indigo-100 dark:hover:bg-indigo-900
+            `}
+            onClick={() => {
+              setFullNap(true);
+              setPartialNap(false);
+              setNoNap(false);
+            }}
+            aria-pressed={fullNap}
+          >
+            Full Nap
+          </button>
+          <button
+            type="button"
+            className={`rounded-full px-4 py-2 font-medium transition-colors
+              ${partialNap
+                ? "bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 text-white"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200"}
+              hover:bg-indigo-100 dark:hover:bg-indigo-900
+            `}
+            onClick={() => {
+              setFullNap(false);
+              setPartialNap(true);
+              setNoNap(false);
+            }}
+            aria-pressed={partialNap}
+          >
+            Partial Nap
+          </button>
+          <button
+            type="button"
+            className={`rounded-full px-4 py-2 font-medium transition-colors
+              ${noNap
+                ? "bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 text-white"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200"}
+              hover:bg-indigo-100 dark:hover:bg-indigo-900
+            `}
+            onClick={() => {
+              setFullNap(false);
+              setPartialNap(false);
+              setNoNap(true);
+            }}
+            aria-pressed={noNap}
+          >
+            No Nap
+          </button>
         </div>
         <Textarea
           placeholder="Add any notes..."

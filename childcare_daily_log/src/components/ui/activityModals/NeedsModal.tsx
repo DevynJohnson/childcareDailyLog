@@ -3,7 +3,6 @@ import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatLocalDateTime } from "@/lib/timestamp";
 import { Button } from "../../ui/button";
-import { Checkbox } from "../../ui/checkbox";
 import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
 
@@ -109,33 +108,41 @@ export default function NeedsModal({
           </button>
         </div>
 
-        <div className="space-y-2">
+        <div className="flex flex-wrap gap-2 mb-2">
           {NEEDS_OPTIONS.map((item) => (
-            <label key={item} className="flex items-center space-x-2">
-              <Checkbox
-                checked={needs.includes(item)}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    setNeeds((prev) => [...prev, item]);
-                  } else {
-                    setNeeds((prev) => prev.filter((n) => n !== item));
-                    if (item === "Other") setOtherNeedDetail("");
-                  }
-                }}
-              />
-              <span>{item}</span>
-            </label>
+            <button
+              key={item}
+              type="button"
+              className={`rounded-full px-4 py-2 font-medium transition-colors
+                ${needs.includes(item)
+                  ? "bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 text-white"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200"}
+                hover:bg-indigo-100 dark:hover:bg-indigo-900
+              `}
+              onClick={() => {
+                if (needs.includes(item)) {
+                  setNeeds((prev) => prev.filter((n) => n !== item));
+                  if (item === "Other") setOtherNeedDetail("");
+                } else {
+                  setNeeds((prev) => [...prev, item]);
+                }
+              }}
+              aria-pressed={needs.includes(item)}
+            >
+              {item}
+            </button>
           ))}
-
-          {needs.includes("Other") && (
-            <Input
-              type="text"
-              placeholder="Please add a description"
-              value={otherNeedDetail}
-              onChange={(e) => setOtherNeedDetail(e.target.value)}
-            />
-          )}
         </div>
+
+        {needs.includes("Other") && (
+          <Input
+            type="text"
+            placeholder="Please add a description"
+            value={otherNeedDetail}
+            onChange={(e) => setOtherNeedDetail(e.target.value)}
+            className="mb-2"
+          />
+        )}
 
         <Textarea
           placeholder="Add any notes..."
