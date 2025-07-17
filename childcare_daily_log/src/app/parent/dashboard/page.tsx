@@ -150,10 +150,10 @@ export default function ParentDashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-center">
+      <h1 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
         Welcome{parentName ? ` ${parentName}` : ""}!
       </h1>
-      <h2 className="text-center">This is your parent dashboard. You can see a list of all your child&#39;s logged activities for the date selected below.</h2>
+      <h2 className="text-center">This is your parent dashboard. Below you can see a list of your child&apos;s activities for the date selected!</h2>
       {userEmail && children.length > 1 && (
         <div className="max-w-sm">
           <Select
