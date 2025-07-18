@@ -1,23 +1,44 @@
 // src/components/NavBar.tsx
 "use client";
 
+
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
 import "../app/globals.css";
+
+
 
 export default function NavBar() {
   const { user, role, loading, isSuperuser, setRoleOverride } = useAuth();
+  const router = useRouter();
+
+  // Debug: log role and user info
+  if (typeof window !== 'undefined') {
+    console.log('[NavBar] user:', user?.email, 'role:', role, 'isSuperuser:', isSuperuser);
+  }
 
   if (loading) return null;
 
-  // const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-  //   setRoleOverride(e.target.value as "admin" | "caregiver" | "parent");
-  // };
+  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setRoleOverride(e.target.value as "admin" | "caregiver" | "parent");
+  };
 
   return (
-    <nav className="shadow p-4 flex justify-between items-center" style={{ background: 'linear-gradient(90deg, #479132 0%, #6fcf97 100%)' }}>
+    <nav
+      className="shadow p-4 flex justify-between items-center rounded-3xl"
+      style={{
+        background: 'linear-gradient(90deg, #479132 0%, #6fcf97 100%)',
+        boxShadow: '0 12px 36px 0 rgba(76,175,80,0.45), 0 4px 16px 0 rgba(0,0,0,0.18)',
+        zIndex: 10,
+        borderRadius: '2rem',
+        margin: '1.5rem auto',
+        width: 'calc(100% - 1rem)',
+        maxWidth: '1500px',
+      }}
+    >
       <div className="flex items-center gap-8" style={{ color: 'var(--dark-indigo)' }}>
         <Link href="/" className="nav-header text-xl font-bold">
           Childcare Daily Log
@@ -46,7 +67,7 @@ export default function NavBar() {
         )}
       </div>
 
-      {/* <div className="flex items-center space-x-4 text-indigo-900" style={{ textShadow: '0 0 1px #000' }}>
+      <div className="flex items-center space-x-4 text-indigo-900" style={{ textShadow: '0 0 1px #000' }}>
         {isSuperuser && (
           <select
             onChange={handleRoleChange}
@@ -58,7 +79,7 @@ export default function NavBar() {
             <option value="parent">View as Parent/Guardian</option>
           </select>
         )}
-      </div> */}
+      </div>
 
       <div className="flex flex-col items-end text-right text-indigo-900" style={{ textShadow: '0 0 1px #000' }}>
         {user ? (
@@ -67,6 +88,7 @@ export default function NavBar() {
               onClick={async () => {
                 localStorage.removeItem("roleOverride");
                 await signOut(auth);
+                router.push("/auth");
               }}
               className="text-red-500 hover:text-white hover:bg-red-600 transition-colors rounded px-2 py-1"
             >

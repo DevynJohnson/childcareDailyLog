@@ -45,6 +45,7 @@ export default function CaregiverManagementPage() {
         if (a.isActive !== b.isActive) {
           return a.isActive ? -1 : 1;
         }
+        return 0;
       });
       
       setCaregivers(results);
@@ -71,7 +72,7 @@ export default function CaregiverManagementPage() {
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   const handleCreate = () => {
     setEditingCaregiver(null);
@@ -174,7 +175,6 @@ export default function CaregiverManagementPage() {
                 <h3 className="font-semibold text-lg">
                   {caregiver.firstName} {caregiver.lastName}
                 </h3>
-                <p className="text-sm text-muted-foreground">{caregiver.title}</p>
                 <p className="text-xs font-mono bg-muted px-1 rounded mt-1">
                   {caregiver.initials}
                 </p>
@@ -190,7 +190,6 @@ export default function CaregiverManagementPage() {
             
             <div className="space-y-1 text-sm text-muted-foreground mb-3">
               <p>{caregiver.email}</p>
-              {caregiver.phone && <p>{caregiver.phone}</p>}
             </div>
             
             <div className="flex justify-between">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "@/lib/firebase";
+import { useAuth } from '@/context/AuthContext';
 import { DayPicker } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -34,6 +35,9 @@ type Child = {
 };
 
 export default function ParentDashboard() {
+  const { role, loading: authLoading } = useAuth();
+  const isAdmin = role === 'admin';
+  
   // Show notes state for toggling notes display per activity
   const [showNotes, setShowNotes] = useState<{ [id: string]: boolean }>({});
   const toggleShowNotes = (id: string) => setShowNotes((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -55,10 +59,10 @@ export default function ParentDashboard() {
     return unsubscribe;
   }, []);
 
-  // Fetch children for the parent user
+  // Fetch children for the parent user or all children if admin
   useEffect(() => {
     const fetchChildren = async () => {
-      if (!userEmail) return;
+      if (!userEmail || authLoading) return;
 
       const snapshot = await import("firebase/firestore").then(({ collection, getDocs }) => getDocs(collection(db, "children")));
       const allChildren = snapshot.docs.map((doc) => ({
@@ -66,34 +70,90 @@ export default function ParentDashboard() {
         ...doc.data(),
       })) as Child[];
 
-      const filtered = allChildren.filter(
-        (child: any) =>
-          Array.isArray(child.parents) &&
-          child.parents.some((parent: ParentInfo) => parent.email === userEmail)
-      );
-
-      setChildren(filtered);
-
-      if (filtered.length > 0) {
-        const matchingParent = filtered[0].parents?.find(
-          (parent: ParentInfo) => parent.email === userEmail
+      let filteredChildren: Child[];
+      
+      if (isAdmin) {
+        // Admin can see all children
+        filteredChildren = allChildren;
+        setParentName("Admin");
+      } else {
+        // Regular parent can only see their own children
+        filteredChildren = allChildren.filter(
+          (child: Child) =>
+            Array.isArray(child.parents) &&
+            child.parents.some((parent: ParentInfo) => parent.email === userEmail)
         );
-        if (matchingParent) {
-          setParentName(`${matchingParent.firstName}`);
-        }
 
-        setSelectedChildId(filtered[0].id); // Always default to first child
+        // Set parent name for regular parents
+        if (filteredChildren.length > 0) {
+          const matchingParent = filteredChildren[0].parents?.find(
+            (parent: ParentInfo) => parent.email === userEmail
+          );
+          if (matchingParent) {
+            setParentName(`${matchingParent.firstName}`);
+          }
+        }
+      }
+
+      setChildren(filteredChildren);
+
+      if (filteredChildren.length > 0) {
+        setSelectedChildId(filteredChildren[0].id); // Always default to first child
       }
     };
 
     fetchChildren();
-  }, [userEmail]);
+  }, [userEmail, isAdmin, authLoading]);
 
   // Real-time activities
   const { activitiesByType, loading, error } = useRealTimeActivities(selectedChildId, dateKey);
 
   // Enhanced timestamp extraction function
-  const getTimestamp = (activity: any): number => {
+  type Activity = {
+  id?: string;  // Keep as optional since some activities might not have id initially
+  activityType?: string;  // Keep as optional to match your original structure
+  timestamp?: Date | { toDate: () => Date } | string | number;
+  createdAt?: Date | { toDate: () => Date } | string | number;
+  caregiverInitials?: string;
+  caregiver?: string;
+  notes?: string;
+  
+  // Bathroom activity data
+  bathroomData?: {
+    urinated?: boolean;
+    bm?: boolean;
+    noVoid?: boolean;
+  };
+  
+  // Sleep/Nap activity data
+  napData?: {
+    fullNap?: boolean;
+    partialNap?: boolean;
+    noNap?: boolean;
+  };
+  nap?: {
+    fullNap?: boolean;
+    partialNap?: boolean;
+    noNap?: boolean;
+  };
+  
+  // Activities data
+  activityDetails?: {
+    activityCategory?: string;
+    detail?: string;
+  };
+  
+  // Food data
+  foodData?: {
+    item?: string;
+    amount?: "All" | "Some" | "None";
+  };
+  
+  // Needs data
+  needsData?: string[];
+};
+
+  const getTimestamp = (activity: Activity): number => {
     if (!activity) return 0;
     
     // Try timestamp first
@@ -133,7 +193,7 @@ export default function ParentDashboard() {
   // Collect all activities from all types and sort strictly by timestamp (earliest to latest)
   const allActivities = Object.values(activitiesByType)
     .flat()
-    .sort((a: any, b: any) => {
+    .sort((a: Activity, b: Activity) => {
       const timestampA = getTimestamp(a);
       const timestampB = getTimestamp(b);
       
@@ -148,36 +208,55 @@ export default function ParentDashboard() {
       return idA.localeCompare(idB);
     });
 
+  // Show loading state while auth is loading
+  if (authLoading) {
+    return <div className="p-6">Loading...</div>;
+  }
+
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
         Welcome{parentName ? ` ${parentName}` : ""}!
       </h1>
-      <h2 className="text-center">This is your parent dashboard. Below you can see a list of your child&apos;s activities for the date selected!</h2>
-      {userEmail && children.length > 1 && (
+      <h2 className="text-center">
+        {isAdmin 
+          ? "Admin Dashboard - View any child's activities for the selected date!"
+          : "This is your parent dashboard. Below you can see a list of your child's activities for the date selected!"
+        }
+      </h2>
+      
+      {/* Child selection dropdown - show if admin OR parent with multiple children */}
+      {userEmail && (children.length > 1 || isAdmin) && (
         <div className="max-w-sm">
           <Select
             onValueChange={(value) => setSelectedChildId(value)}
             value={selectedChildId || ""}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select your child" />
+              <SelectValue placeholder={isAdmin ? "Select a child" : "Select your child"} />
             </SelectTrigger>
             <SelectContent>
               {children.map((child) => (
                 <SelectItem key={child.id} value={child.id}>
                   {child.firstName} {child.lastName}
+                  {isAdmin && child.parents && child.parents.length > 0 && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      (Parent: {child.parents[0].firstName} {child.parents[0].lastName})
+                    </span>
+                  )}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
       )}
+      
       {children.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          No child profiles found for this account.
+          {isAdmin ? "No children found in the system." : "No child profiles found for this account."}
         </p>
       )}
+      
       <div className="flex justify-center mb-4">
         <div className="relative rdp inline-block w-80">
           <Button
@@ -207,11 +286,12 @@ export default function ParentDashboard() {
           )}
         </div>
       </div>
+      
       {selectedChildId && (
         <div className="max-w-7xl mx-auto">
           <Card className="card-gradient p-8">
             <h2 className="text-lg font-semibold text-center mb-4">
-              Here is a look at {(children.find((c) => c.id === selectedChildId)?.firstName || "your child&#39;s")}&apos;s day on {selectedDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}!
+              Here is a look at {(children.find((c) => c.id === selectedChildId)?.firstName || "the child's")} day on {selectedDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}!
             </h2>
             {loading ? (
               <div className="text-muted-foreground text-sm">Loading...</div>
@@ -222,7 +302,8 @@ export default function ParentDashboard() {
             ) : (
               <ol className="space-y-4">
                 {allActivities.map((activityRaw) => {
-                  const activity = activityRaw as any;
+
+                  const activity = activityRaw as Activity;
                   // --- Summary/emoji UI copied from Caregiver Dashboard ---
                   let summary = null;
                   // Format timestamp and initials
@@ -240,9 +321,10 @@ export default function ParentDashboard() {
                   } else if (
                     activity.createdAt &&
                     typeof activity.createdAt === "object" &&
-                    typeof activity.createdAt.toDate === "function"
+                    !(activity.createdAt instanceof Date) &&
+                    typeof (activity.createdAt as { toDate?: () => Date }).toDate === "function"
                   ) {
-                    date = activity.createdAt.toDate();
+                    date = (activity.createdAt as { toDate: () => Date }).toDate();
                   }
                   const timeString = date && !isNaN(date.getTime()) ? formatTimestamp(date) : "No timestamp";
                   // Caregiver initials fallback (optional for parent view)
@@ -381,9 +463,9 @@ export default function ParentDashboard() {
                           <Button
                             className="btn-primary flex-1 min-w-0 min-h-0 h-5 px-1 py-0 text-[11px] leading-none"
                             style={{height: '22px', lineHeight: '1'}}
-                            onClick={() => toggleShowNotes(activity.id)}
+                            onClick={() => activity.id && toggleShowNotes(activity.id)}
                           >
-                            {showNotes[activity.id] ? "Hide Notes" : "Show Notes"}
+                            {activity.id && showNotes[activity.id] ? "Hide Notes" : "Show Notes"}
                           </Button>
                         ) : (
                           <Button
@@ -395,7 +477,7 @@ export default function ParentDashboard() {
                           </Button>
                         )}
                       </div>
-                      {showNotes[activity.id] && activity.notes && (
+                      {activity.id && showNotes[activity.id] && activity.notes && (
                         <div className="mt-1 text-white text-shadow bg-black/30 rounded p-2 text-xs">
                           {activity.notes}
                         </div>

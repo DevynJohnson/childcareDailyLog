@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from '@/context/AuthContext';
 import { Dialog } from "@headlessui/react";
 import { X } from "lucide-react";
 import { db } from "@/lib/firebase";
@@ -14,24 +15,11 @@ import {
 } from "firebase/firestore";
 import ChildForm from "./ChildForm";
 
-type ParentInfo = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-};
+import type { Child } from "@/types/child";
 
-type Child = {
-  id?: string;
-  firstName: string;
-  lastName: string;
-  birthDate?: Date | null;
-  allergies?: string;
-  notes?: string;
-  parents?: ParentInfo[];
-};
-
-export default function ChildManagementPage() {
+function ChildrenAdminPage() {
+  const { role, loading } = useAuth();
+  const isAdmin = role === 'admin';
   const [children, setChildren] = useState<Child[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingChild, setEditingChild] = useState<Child | null>(null);
@@ -45,9 +33,11 @@ export default function ChildManagementPage() {
     setChildren(results);
   };
 
-  useEffect(() => {
+useEffect(() => {
+  if (!loading && isAdmin) {
     fetchChildren();
-  }, []);
+  }
+}, [loading, isAdmin]);
 
   const handleCreate = () => {
     setEditingChild(null);
@@ -64,31 +54,38 @@ export default function ChildManagementPage() {
     fetchChildren();
   };
 
- const handleSave = async (child: Child) => {
-  const payload = {
-    firstName: child.firstName,
-    lastName: child.lastName,
-    birthDate: child.birthDate || "",
-    allergies: child.allergies || "",
-    notes: child.notes || "",
-    parents: child.parents || [],
+  const handleSave = async (child: Child) => {
+    const payload = {
+      firstName: child.firstName,
+      lastName: child.lastName,
+      birthDate: child.birthDate || "",
+      allergies: child.allergies || "",
+      notes: child.notes || "",
+      parents: child.parents || [],
+    };
+
+    if (editingChild && editingChild.id) {
+      const docRef = doc(db, "children", editingChild.id);
+      await updateDoc(docRef, payload);
+    } else {
+      await addDoc(collection(db, "children"), payload);
+    }
+
+    setIsModalOpen(false);
+    fetchChildren();
   };
 
-  if (editingChild && editingChild.id) {
-    const docRef = doc(db, "children", editingChild.id);
-    await updateDoc(docRef, payload);
-  } else {
-    await addDoc(collection(db, "children"), payload);
+  if (loading) {
+    return <div className="p-6">Loading...</div>;
   }
-
-  setIsModalOpen(false);
-  fetchChildren();
-};
-
+  // Optionally, you can add your own error handling here if needed
+  if (!isAdmin) {
+    return <div className="p-6 text-red-600">You do not have permission to access this page.</div>;
+  }
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Manage Children</h1>
+      <h1 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg mb-8" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>Manage Children</h1>
       <button
         onClick={handleCreate}
         className="bg-blue-600 text-white px-4 py-2 rounded mb-4"
@@ -182,3 +179,5 @@ export default function ChildManagementPage() {
     </div>
   );
 }
+
+export default ChildrenAdminPage;
