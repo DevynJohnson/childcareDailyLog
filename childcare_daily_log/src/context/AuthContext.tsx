@@ -27,6 +27,9 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  if (typeof window !== 'undefined') {
+    console.log('[AuthProvider] mounted');
+  }
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [role, setRole] = useState<Role | null>(null);
   const [isSuperuser, setIsSuperuser] = useState(false);
@@ -45,15 +48,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 🧠 Track auth state
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('[AuthContext] onAuthStateChanged called. firebaseUser:', firebaseUser);
       setUser(firebaseUser);
 
-      if (firebaseUser && firebaseUser.emailVerified) {
+      if (firebaseUser) {
+        console.log('[AuthContext] Fetching Firestore user doc for UID:', firebaseUser.uid);
         const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
+        console.log('[AuthContext] Firestore user doc exists:', snap.exists(), 'data:', snap.data(), 'user:', firebaseUser.email);
         if (snap.exists()) {
           const data = snap.data();
           setRole(data.role);
           setIsSuperuser(!!data.isSuperuser);
-          
+          console.log('[AuthContext] Set role:', data.role, 'isSuperuser:', !!data.isSuperuser, 'user:', firebaseUser.email);
+          // Only require email verification for caregivers and parents
+          if ((data.role === 'caregiver' || data.role === 'parent') && !firebaseUser.emailVerified) {
+            setRole(null);
+            setIsSuperuser(false);
+            setCaregiverInfo(null);
+            return;
+          }
           // If user is a caregiver, fetch their profile info
           if (data.role === 'caregiver') {
             const caregiverSnap = await getDoc(doc(db, 'caregivers', firebaseUser.uid));

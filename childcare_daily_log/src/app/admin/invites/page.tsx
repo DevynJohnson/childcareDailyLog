@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { createInvite, getAllInvites } from '@/lib/inviteService';
 import { getUsersByRole } from '@/lib/userQueryService';
+import { collection, getDocs } from 'firebase/firestore';
 import { Invite } from '@/types/invite';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 import { useRouter } from 'next/navigation';
@@ -31,6 +31,11 @@ export default function InvitesPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Add missing state for email, role, and childIds
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<'parent' | 'caregiver'>('parent');
+  const [childIds, setChildIds] = useState('');
+
   const router = useRouter();
   // Secure: Only allow admins
   useAuthEffect(() => {
@@ -54,9 +59,41 @@ export default function InvitesPage() {
   useEffect(() => {
     if (isAdmin && authChecked) {
       getAllInvites().then(setInvites);
-      // Fetch all parents and caregivers (registered users)
-      getUsersByRole('parent').then(users => setParents(users.map(u => ({ email: u.email, name: u.name, registered: true }))));
+      // Fetch all caregivers (registered users)
       getUsersByRole('caregiver').then(users => setCaregivers(users.map(u => ({ email: u.email, name: u.name, registered: true }))));
+
+      // Fetch all parents from children collection
+      (async () => {
+        const snapshot = await getDocs(collection(db, 'children'));
+        const allParents: { email: string; name: string }[] = [];
+        type Parent = { email: string; firstName: string; lastName: string };
+        snapshot.docs.forEach(docSnap => {
+          const data = docSnap.data();
+          if (Array.isArray(data.parents)) {
+            data.parents.forEach((parent: Parent) => {
+              if (parent.email && parent.firstName && parent.lastName) {
+                allParents.push({
+                  email: parent.email,
+                  name: `${parent.firstName} ${parent.lastName}`,
+                });
+              }
+            });
+          }
+        });
+        // Deduplicate by email
+        const uniqueParents = Array.from(
+          new Map(allParents.map(p => [p.email, p])).values()
+        );
+        // Check registration status by cross-referencing with users
+        const registeredUsers = await getUsersByRole('parent');
+        setParents(
+          uniqueParents.map(parent => ({
+            email: parent.email,
+            name: parent.name,
+            registered: registeredUsers.some(u => u.email === parent.email),
+          }))
+        );
+      })();
     }
   }, [isAdmin, authChecked, success]);
 
@@ -74,7 +111,7 @@ export default function InvitesPage() {
       setEmail('');
       setChildIds('');
       setRole('parent');
-    } catch (e) {
+    } catch {
       setError('Failed to send invite.');
     } finally {
       setLoading(false);
@@ -107,13 +144,13 @@ export default function InvitesPage() {
   }
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">User Registration & Invites</h1>
+      <h1 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg mb-8" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>User Registration & Invites</h1>
       {error && <div className="text-red-600 mb-2">{error}</div>}
       {success && <div className="text-green-600 mb-2">{success}</div>}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
         {/* Caregivers Table */}
-        <div>
-          <h2 className="text-xl font-semibold mb-2">Caregivers</h2>
+        <div className="card-gradient p-8 rounded-lg shadow-md min-w-[480px]">
+          <h2 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg mb-6" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>Caregivers</h2>
           <table className="w-full border text-sm">
             <thead>
               <tr>
@@ -147,8 +184,8 @@ export default function InvitesPage() {
           </table>
         </div>
         {/* Parents Table */}
-        <div>
-          <h2 className="text-xl font-semibold mb-2">Parents</h2>
+        <div className="card-gradient p-8 rounded-lg shadow-md min-w-[480px]">
+          <h2 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg mb-6" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>Parents</h2>
           <table className="w-full border text-sm">
             <thead>
               <tr>

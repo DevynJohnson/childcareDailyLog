@@ -1,22 +1,7 @@
+
 import { useEffect, useState } from "react";
 import { formatPhoneNumber } from "@/lib/formatPhoneNumber";
-
-interface ParentInfo {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-}
-
-interface Child {
-  id?: string;
-  firstName: string;
-  lastName: string;
-  birthDate?: string | Date | null;
-  notes?: string;
-  allergies?: string;
-  parents: ParentInfo[];
-}
+import type { Child, ParentInfo } from "@/types/child";
 
 interface ChildFormProps {
   initialData?: Child | null;
