@@ -159,8 +159,8 @@ export default function CaregiverManagementPage() {
 
   return (
     <div className="p-6 space-y-6">
+        <h1 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>Manage Caregivers</h1>
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Manage Caregivers</h1>
         <Button onClick={handleCreate} className="flex items-center gap-2">
           <Plus className="w-4 h-4" />
           Add Caregiver

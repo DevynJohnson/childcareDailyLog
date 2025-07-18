@@ -12,19 +12,14 @@ import "../app/globals.css";
 
 
 export default function NavBar() {
-  const { user, role, loading, isSuperuser, setRoleOverride } = useAuth();
+  const { user, role, loading } = useAuth();
   const router = useRouter();
 
-  // Debug: log role and user info
-  if (typeof window !== 'undefined') {
-    console.log('[NavBar] user:', user?.email, 'role:', role, 'isSuperuser:', isSuperuser);
-  }
+
 
   if (loading) return null;
 
-  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRoleOverride(e.target.value as "admin" | "caregiver" | "parent");
-  };
+
 
   return (
     <nav
@@ -39,7 +34,7 @@ export default function NavBar() {
         maxWidth: '1500px',
       }}
     >
-      <div className="flex items-center gap-8" style={{ color: 'var(--dark-indigo)' }}>
+      <div className="text-indigo-900 flex items-center gap-8" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
         <Link href="/" className="nav-header text-xl font-bold">
           Childcare Daily Log
         </Link>
@@ -67,19 +62,7 @@ export default function NavBar() {
         )}
       </div>
 
-      <div className="flex items-center space-x-4 text-indigo-900" style={{ textShadow: '0 0 1px #000' }}>
-        {isSuperuser && (
-          <select
-            onChange={handleRoleChange}
-            value={role ?? ""}
-            className="border rounded px-2 py-1 bg-white text-indigo-900 shadow"
-          >
-            <option value="admin">View as Admin</option>
-            <option value="caregiver">View as Caregiver</option>
-            <option value="parent">View as Parent/Guardian</option>
-          </select>
-        )}
-      </div>
+      {/* Removed superuser role override select */}
 
       <div className="flex flex-col items-end text-right text-indigo-900" style={{ textShadow: '0 0 1px #000' }}>
         {user ? (

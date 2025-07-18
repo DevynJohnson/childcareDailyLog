@@ -9,7 +9,6 @@ import { showSuccess, showError } from "@/lib/toastUtils";
 type User = {
   email: string;
   role: string;
-  isSuperuser: boolean;
 };
 
 type ParentInfo = {
@@ -85,7 +84,6 @@ const handleSendInvite = async (email: string) => {
           {users.map(user => (
             <li key={user.email} className="text-sm">
               <span className="font-medium">{user.email}</span> — {user.role}
-              {user.isSuperuser && <span className="ml-2 text-yellow-600">(Superuser)</span>}
             </li>
           ))}
         </ul>

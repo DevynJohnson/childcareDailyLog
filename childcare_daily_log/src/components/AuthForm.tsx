@@ -7,7 +7,20 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendEmailVerification,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
+  const handleForgotPassword = async () => {
+    if (!email) {
+      showError("Please enter your email address first.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showSuccess("Password reset email sent! Check your inbox.");
+    } catch (err) {
+      showError("Failed to send password reset email. Please check the email address.");
+    }
+  };
 import { db } from '@/lib/firebase';
 import {
   setDoc,
@@ -44,6 +57,7 @@ async function registerUser(email: string, password: string) {
 
   return user;
 }
+
 
 export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
@@ -130,6 +144,19 @@ export default function AuthForm() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      showError("Please enter your email address first.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showSuccess("Password reset email sent! Check your inbox.");
+    } catch {
+      showError("Failed to send password reset email. Please check the email address.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -197,16 +224,23 @@ export default function AuthForm() {
           </div>
         )}
 
-        <button type="submit" className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition">
+        <button
+          type="submit"
+          className="rounded-full px-6 py-3 font-medium transition-colors text-white text-center bg-gradient-to-r from-[#479132] to-[#6fcf97] hover:from-green-700 hover:to-green-500 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 shadow mt-2 w-full"
+        >
           {isLogin ? 'Login' : 'Register'}
         </button>
       </form>
       <button
-        onClick={() => setIsLogin(!isLogin)}
-        className="mt-4 text-sm text-gray-600 underline"
+        type="button"
+        onClick={handleForgotPassword}
+        className="rounded-full px-6 py-3 font-medium transition-colors text-white text-center bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 hover:from-indigo-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 shadow mt-2 w-full"
       >
-        {isLogin ? 'Need an account? Register' : 'Already have an account? Login'}
+        Forgot Password?
       </button>
+      <div className="mt-4 text-sm text-gray-600 text-center">
+        This platform is available by invite only. Please contact the administrator to request access.
+      </div>
     </div>
   );
 }
