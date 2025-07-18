@@ -3,7 +3,6 @@ export type CaregiverInfo = {
   firstName: string;
   lastName: string;
   email: string;
-  isActive: boolean;
   initials: string; // Auto-generated from first/last name
   createdAt?: Date;
   updatedAt?: Date;

@@ -1,3 +1,14 @@
+/* Force shadcn/ui Select dropdown popover to have a white background */
+.select-popover,[data-slot="select-content"],.select-popover * {
+  background: #fff !important;
+  color: #222 !important;
+}
+/* Global style for all h1 headers */
+h1 {
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 2px 3.5px black;
+}
 /* Responsive adjustments for mobile, tablet, and desktop */
 @media (max-width: 900px) {
   .container, .main-content {
@@ -114,7 +125,7 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #f5f5f4;
+  --background: linear-gradient(135deg, var(--dark-indigo) 0%, #6366f1 100%);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);

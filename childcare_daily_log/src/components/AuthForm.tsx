@@ -170,7 +170,7 @@ export default function AuthForm() {
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 border rounded shadow-md bg-white">
-      <h2 className="text-xl font-bold mb-4">{isLogin ? 'Login' : 'Register'}</h2>
+      <h2 className="text-xl text-center font-bold mb-4">{isLogin ? 'Log In' : 'Register'}</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
           type="email"

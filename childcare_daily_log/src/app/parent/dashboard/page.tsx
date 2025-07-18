@@ -1,494 +1,107 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { db, auth } from "@/lib/firebase";
+'use client';
+import { db } from '@/lib/firebase';
+// src/app/parent/dashboard/page.tsx
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { DayPicker } from "react-day-picker";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import "react-day-picker/dist/style.css";
-import { useRealTimeActivities } from "@/hooks/useRealTimeActivities";
-import { formatTimestamp } from "@/lib/dateUtils";
+import { useRouter } from 'next/navigation';
+import { useRealTimeActivities } from '@/hooks/useRealTimeActivities';
 
+export default function ParentDashboardPage() {
+  const { role, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && role !== 'parent') router.replace('/auth');
+  }, [loading, role, router]);
+
+  if (loading || role !== 'parent') return <p>Loading...</p>;
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg mb-8" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>Parent Dashboard</h1>
+      <div className="flex flex-col gap-8 max-w-5xl mx-auto">
+        <div className="card-gradient p-8 rounded-3xl shadow-lg flex flex-col w-full">
+          <h2 className="mb-4 text-center"></h2>
+          <div className="flex flex-wrap justify-center gap-6">
+            <a
+              href="/parent/activity-view"
+              className="rounded-full px-6 py-3 font-medium transition-colors text-white text-center bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 hover:from-indigo-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 shadow"
+            >
+              Activity Log
+            </a>
+            <a
+              href="/parent/update-us"
+              className="rounded-full px-6 py-3 font-medium transition-colors text-white text-center bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 hover:from-indigo-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 shadow"
+            >
+              Update Us
+            </a>
+          </div>
+          {/* Needs from yesterday - now inside the card, below the buttons */}
+          <NeedsFromYesterday />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- NeedsFromYesterday component ---
 type ParentInfo = {
   firstName: string;
   lastName: string;
   email: string;
 };
-
 type Child = {
   id: string;
   firstName: string;
   lastName: string;
-  birthDate?: string;
-  allergies?: string;
-  notes?: string;
   parents?: ParentInfo[];
 };
+//
 
-export default function ParentDashboard() {
-  const { role, loading: authLoading } = useAuth();
-  const isAdmin = role === 'admin';
-  
-  // Show notes state for toggling notes display per activity
-  const [showNotes, setShowNotes] = useState<{ [id: string]: boolean }>({});
-  const toggleShowNotes = (id: string) => setShowNotes((prev) => ({ ...prev, [id]: !prev[id] }));
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [parentName, setParentName] = useState<string | null>(null);
+function NeedsFromYesterday() {
+  const { user } = useAuth();
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
-  const [children, setChildren] = useState<Child[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [children, setChildren] = useState<Child[]>([]); // intentionally unused, but needed for child selection
 
-  // Use local time for dateKey (YYYY-MM-DD) for grouping, but preserve event timestamps
-  const dateKey = selectedDate.toLocaleDateString('en-CA');
+  // Get yesterday's dateKey
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const dateKey = yesterday.toLocaleDateString('en-CA');
 
-  // Fetch Firebase Auth user email
+  // Fetch children for this parent
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUserEmail(user?.email ?? null);
+    if (!user?.email) return;
+    import('firebase/firestore').then(({ collection, getDocs }) => {
+      getDocs(collection(db, 'children')).then(snapshot => {
+        const myChildren = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as Child))
+          .filter(child => Array.isArray(child.parents) && child.parents.some((p) => p.email === user.email));
+        setChildren(myChildren);
+        if (myChildren.length > 0) setSelectedChildId(myChildren[0].id);
+      });
     });
-    return unsubscribe;
-  }, []);
+  }, [user]);
 
-  // Fetch children for the parent user or all children if admin
-  useEffect(() => {
-    const fetchChildren = async () => {
-      if (!userEmail || authLoading) return;
+  // Get activities for yesterday
+  const { activitiesByType } = useRealTimeActivities(selectedChildId, dateKey);
+  type Activity = { id?: string; needsData?: string[] };
+  const needsActivities = (activitiesByType['Needs'] || []).filter((a: Activity) => Array.isArray(a.needsData) && a.needsData.length > 0);
+  const needsList: string[] = needsActivities.flatMap((a) => (a.needsData as string[]));
 
-      const snapshot = await import("firebase/firestore").then(({ collection, getDocs }) => getDocs(collection(db, "children")));
-      const allChildren = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Child[];
-
-      let filteredChildren: Child[];
-      
-      if (isAdmin) {
-        // Admin can see all children
-        filteredChildren = allChildren;
-        setParentName("Admin");
-      } else {
-        // Regular parent can only see their own children
-        filteredChildren = allChildren.filter(
-          (child: Child) =>
-            Array.isArray(child.parents) &&
-            child.parents.some((parent: ParentInfo) => parent.email === userEmail)
-        );
-
-        // Set parent name for regular parents
-        if (filteredChildren.length > 0) {
-          const matchingParent = filteredChildren[0].parents?.find(
-            (parent: ParentInfo) => parent.email === userEmail
-          );
-          if (matchingParent) {
-            setParentName(`${matchingParent.firstName}`);
-          }
-        }
-      }
-
-      setChildren(filteredChildren);
-
-      if (filteredChildren.length > 0) {
-        setSelectedChildId(filteredChildren[0].id); // Always default to first child
-      }
-    };
-
-    fetchChildren();
-  }, [userEmail, isAdmin, authLoading]);
-
-  // Real-time activities
-  const { activitiesByType, loading, error } = useRealTimeActivities(selectedChildId, dateKey);
-
-  // Enhanced timestamp extraction function
-  type Activity = {
-  id?: string;  // Keep as optional since some activities might not have id initially
-  activityType?: string;  // Keep as optional to match your original structure
-  timestamp?: Date | { toDate: () => Date } | string | number;
-  createdAt?: Date | { toDate: () => Date } | string | number;
-  caregiverInitials?: string;
-  caregiver?: string;
-  notes?: string;
-  
-  // Bathroom activity data
-  bathroomData?: {
-    urinated?: boolean;
-    bm?: boolean;
-    noVoid?: boolean;
-  };
-  
-  // Sleep/Nap activity data
-  napData?: {
-    fullNap?: boolean;
-    partialNap?: boolean;
-    noNap?: boolean;
-  };
-  nap?: {
-    fullNap?: boolean;
-    partialNap?: boolean;
-    noNap?: boolean;
-  };
-  
-  // Activities data
-  activityDetails?: {
-    activityCategory?: string;
-    detail?: string;
-  };
-  
-  // Food data
-  foodData?: {
-    item?: string;
-    amount?: "All" | "Some" | "None";
-  };
-  
-  // Needs data
-  needsData?: string[];
-};
-
-  const getTimestamp = (activity: Activity): number => {
-    if (!activity) return 0;
-    
-    // Try timestamp first
-    if (activity.timestamp) {
-      if (activity.timestamp instanceof Date) {
-        return activity.timestamp.getTime();
-      }
-      if (typeof activity.timestamp === "object" && typeof activity.timestamp.toDate === "function") {
-        return activity.timestamp.toDate().getTime();
-      }
-      if (typeof activity.timestamp === "string" && /^\d+$/.test(activity.timestamp)) {
-        return Number(activity.timestamp);
-      }
-      if (typeof activity.timestamp === "string" || typeof activity.timestamp === "number") {
-        const date = new Date(activity.timestamp);
-        if (!isNaN(date.getTime())) return date.getTime();
-      }
-    }
-    
-    // Fallback to createdAt
-    if (activity.createdAt) {
-      if (activity.createdAt instanceof Date) {
-        return activity.createdAt.getTime();
-      }
-      if (typeof activity.createdAt === "object" && typeof activity.createdAt.toDate === "function") {
-        return activity.createdAt.toDate().getTime();
-      }
-      if (typeof activity.createdAt === "string" || typeof activity.createdAt === "number") {
-        const date = new Date(activity.createdAt);
-        if (!isNaN(date.getTime())) return date.getTime();
-      }
-    }
-    
-    return 0;
-  };
-
-  // Collect all activities from all types and sort strictly by timestamp (earliest to latest)
-  const allActivities = Object.values(activitiesByType)
-    .flat()
-    .sort((a: Activity, b: Activity) => {
-      const timestampA = getTimestamp(a);
-      const timestampB = getTimestamp(b);
-      
-      // Primary sort by timestamp
-      if (timestampA !== timestampB) {
-        return timestampA - timestampB;
-      }
-      
-      // Secondary sort by document ID for consistent ordering when timestamps are equal
-      const idA = a.id || '';
-      const idB = b.id || '';
-      return idA.localeCompare(idB);
-    });
-
-  // Show loading state while auth is loading
-  if (authLoading) {
-    return <div className="p-6">Loading...</div>;
-  }
+  if (!selectedChildId) return null;
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
-        Welcome{parentName ? ` ${parentName}` : ""}!
-      </h1>
-      <h2 className="text-center">
-        {isAdmin 
-          ? "Admin Dashboard - View any child's activities for the selected date!"
-          : "This is your parent dashboard. Below you can see a list of your child's activities for the date selected!"
-        }
-      </h2>
-      
-      {/* Child selection dropdown - show if admin OR parent with multiple children */}
-      {userEmail && (children.length > 1 || isAdmin) && (
-        <div className="max-w-sm">
-          <Select
-            onValueChange={(value) => setSelectedChildId(value)}
-            value={selectedChildId || ""}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={isAdmin ? "Select a child" : "Select your child"} />
-            </SelectTrigger>
-            <SelectContent>
-              {children.map((child) => (
-                <SelectItem key={child.id} value={child.id}>
-                  {child.firstName} {child.lastName}
-                  {isAdmin && child.parents && child.parents.length > 0 && (
-                    <span className="text-xs text-gray-500 ml-2">
-                      (Parent: {child.parents[0].firstName} {child.parents[0].lastName})
-                    </span>
-                  )}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-      
-      {children.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          {isAdmin ? "No children found in the system." : "No child profiles found for this account."}
-        </p>
-      )}
-      
-      <div className="flex justify-center mb-4">
-        <div className="relative rdp inline-block w-80">
-          <Button
-            variant="outline"
-            onClick={() => setShowDatePicker(!showDatePicker)}
-            className="text-base h-12 w-full"
-          >
-            📅 {selectedDate.toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </Button>
-          {showDatePicker && (
-            <div className="absolute z-10 mt-2 bg-white border rounded shadow-lg w-full">
-              <DayPicker
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  if (date) {
-                    setSelectedDate(date);
-                    setShowDatePicker(false);
-                  }
-                }}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-      
-      {selectedChildId && (
-        <div className="max-w-7xl mx-auto">
-          <Card className="card-gradient p-8">
-            <h2 className="text-lg font-semibold text-center mb-4">
-              Here is a look at {(children.find((c) => c.id === selectedChildId)?.firstName || "the child's")} day on {selectedDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}!
-            </h2>
-            {loading ? (
-              <div className="text-muted-foreground text-sm">Loading...</div>
-            ) : error ? (
-              <div className="text-red-500 text-sm">{error}</div>
-            ) : allActivities.length === 0 ? (
-              <div className="text-white text-sm" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>No updates yet.</div>
-            ) : (
-              <ol className="space-y-4">
-                {allActivities.map((activityRaw) => {
-
-                  const activity = activityRaw as Activity;
-                  // --- Summary/emoji UI copied from Caregiver Dashboard ---
-                  let summary = null;
-                  // Format timestamp and initials
-                  let metaInfo = null;
-                  // Robust timestamp handling: use timestamp if Date, else convert Firestore Timestamp, else fallback to createdAt
-                  let date: Date | null = null;
-                  if (activity.timestamp instanceof Date) {
-                    date = activity.timestamp;
-                  } else if (
-                    activity.timestamp &&
-                    typeof activity.timestamp === "object" &&
-                    typeof activity.timestamp.toDate === "function"
-                  ) {
-                    date = activity.timestamp.toDate();
-                  } else if (
-                    activity.createdAt &&
-                    typeof activity.createdAt === "object" &&
-                    !(activity.createdAt instanceof Date) &&
-                    typeof (activity.createdAt as { toDate?: () => Date }).toDate === "function"
-                  ) {
-                    date = (activity.createdAt as { toDate: () => Date }).toDate();
-                  }
-                  const timeString = date && !isNaN(date.getTime()) ? formatTimestamp(date) : "No timestamp";
-                  // Caregiver initials fallback (optional for parent view)
-                  let initials = "?";
-                  if (activity.caregiverInitials && typeof activity.caregiverInitials === "string") {
-                    initials = activity.caregiverInitials;
-                  } else if (activity.caregiver && typeof activity.caregiver === "string") {
-                    initials = activity.caregiver;
-                  }
-                  metaInfo = (
-                    <span className="flex items-center gap-2 text-xs text-white" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
-                      <span className="bg-black/20 px-2 py-0.5 rounded font-mono text-white">{timeString}</span>
-                      <span className="bg-black/20 px-2 py-0.5 rounded font-bold text-white">{initials}</span>
-                    </span>
-                  );
-                  // For summary rows, use flex justify-between to push metaInfo to the far right
-                  const type = activity.activityType;
-                  if (type === "Bathroom" && activity.bathroomData) {
-                    const data = activity.bathroomData as { urinated?: boolean; bm?: boolean; noVoid?: boolean };
-                    const icons = [];
-                    if (data.urinated) icons.push("💦 Urinated");
-                    if (data.bm) icons.push("💩 BM");
-                    if (data.noVoid) icons.push("🚫 No Void");
-                    summary = (
-                      <div className="flex items-center justify-between mb-1 w-full">
-                        <div className="flex gap-2 items-center">
-                          {icons.map((txt, i) => (
-                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>{txt}</span>
-                          ))}
-                        </div>
-                        {metaInfo}
-                      </div>
-                    );
-                  } else if (type === "Sleep" && (activity.napData || activity.nap)) {
-                    const data = (activity.napData || activity.nap) as { fullNap?: boolean; partialNap?: boolean; noNap?: boolean };
-                    const icons = [];
-                    if (data.fullNap) icons.push("🌕 Full Nap");
-                    if (data.partialNap) icons.push("🌙 Partial Nap");
-                    if (data.noNap) icons.push("🚫 No Nap");
-                    summary = (
-                      <div className="flex items-center justify-between mb-1 w-full">
-                        <div className="flex gap-2 items-center">
-                          {icons.map((txt, i) => (
-                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>{txt}</span>
-                          ))}
-                        </div>
-                        {metaInfo}
-                      </div>
-                    );
-                  } else if (type === "Activities" && activity.activityDetails) {
-                    const activityEmojis: Record<string, string> = {
-                      "Toys": "🧸",
-                      "Games": "🎲",
-                      "Outdoor Play": "☀️",
-                      "Art/Crafts": "🎨",
-                      "Music/Singing": "🎵",
-                      "Reading/Storytime": "📚",
-                      "Other Activity": "✨",
-                    };
-                    const details = activity.activityDetails as { activityCategory?: string; detail?: string };
-                    const emoji = activityEmojis[details.activityCategory || ""] || "✨";
-                    summary = (
-                      <div className="mb-1">
-                        <div className="flex items-center justify-between mb-1 w-full">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
-                            {emoji} {details.activityCategory}
-                          </span>
-                          {metaInfo}
-                        </div>
-                        {details.detail && (
-                          <div className="ml-1 text-xs text-white" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
-                            {details.detail}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  } else if (type === "Food" && activity.foodData) {
-                    const data = activity.foodData as { item?: string; amount?: "All" | "Some" | "None" };
-                    summary = (
-                      <div className="mb-1">
-                        <div className="flex items-center justify-between mb-1 w-full">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/30 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
-                            🍽️ {data.item}
-                          </span>
-                          <span className="flex gap-2 items-center">
-                            {data.amount && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/20 text-white text-xs font-semibold" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
-                                {data.amount} eaten
-                              </span>
-                            )}
-                            {metaInfo}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  }
-                  if (type === "Needs" && activity.needsData && Array.isArray(activity.needsData)) {
-                    const needsEmojis: Record<string, string> = {
-                      "Diapers": "🧷",
-                      "Wipes": "🧻",
-                      "Extra Clothes": "👕",
-                      "Snacks": "🍫",
-                      "Other": "⭐",
-                    };
-                    const needsArr = activity.needsData;
-                    const needsList = needsArr.map((need: string, i: number) => {
-                      let label = need;
-                      let emoji = needsEmojis[need] || needsEmojis["Other"];
-                      if (need.startsWith("Other:")) {
-                        label = need;
-                        emoji = needsEmojis["Other"];
-                      }
-                      return (
-                        <li key={i} className="flex items-center gap-2 text-white text-xs mb-1" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
-                          <span>{emoji}</span>
-                          <span>{label}</span>
-                        </li>
-                      );
-                    });
-                    summary = (
-                      <div className="flex items-center mb-1">
-                        <ul className="mb-1 ml-2 list-disc list-inside flex-1">
-                          {needsList}
-                        </ul>
-                        {metaInfo}
-                      </div>
-                    );
-                  }
-                  return (
-                    <li key={activity.id} className="border-b p-2 flex-col items-start">
-                      <div className="text-sm text-white mb-2" style={{textShadow: '0 2px 8px #000, 0 0px 2px #000, 0 1px 0 #000'}}>
-                        {summary}
-                      </div>
-                      <div className="flex gap-1 w-full mt-1">
-                        {activity.notes && activity.notes.trim() ? (
-                          <Button
-                            className="btn-primary flex-1 min-w-0 min-h-0 h-5 px-1 py-0 text-[11px] leading-none"
-                            style={{height: '22px', lineHeight: '1'}}
-                            onClick={() => activity.id && toggleShowNotes(activity.id)}
-                          >
-                            {activity.id && showNotes[activity.id] ? "Hide Notes" : "Show Notes"}
-                          </Button>
-                        ) : (
-                          <Button
-                            className="btn-primary flex-1 min-w-0 min-h-0 h-5 px-1 py-0 text-[11px] leading-none opacity-50 cursor-not-allowed"
-                            style={{height: '22px', lineHeight: '1'}}
-                            disabled
-                          >
-                            No Notes
-                          </Button>
-                        )}
-                      </div>
-                      {activity.id && showNotes[activity.id] && activity.notes && (
-                        <div className="mt-1 text-white text-shadow bg-black/30 rounded p-2 text-xs">
-                          {activity.notes}
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
-            )}
-          </Card>
-        </div>
+    <div className="mt-8 flex flex-col items-center justify-center">
+      <h3 className="text-lg font-bold mb-2 text-white text-center">Supplies we need as of {yesterday.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}:</h3>
+      {needsList.length === 0 ? (
+        <div className="text-white text-sm text-center opacity-70">No supplies needed as of yesterday.</div>
+      ) : (
+        <ul className="list-disc list-inside text-white text-center">
+          {needsList.map((need, i) => (
+            <li key={i}>{need}</li>
+          ))}
+        </ul>
       )}
     </div>
   );

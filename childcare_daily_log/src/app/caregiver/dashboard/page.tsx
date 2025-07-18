@@ -33,6 +33,7 @@ import NeedsModal from "@/components/ui/activityModals/NeedsModal";
 import FoodModal from "@/components/ui/activityModals/FoodModal";
 import "react-day-picker/dist/style.css";
 import { useCallback } from "react";
+import "@/app/globals.css";
 
 const activityTypes = ["Bathroom", "Sleep", "Activities", "Food", "Needs"] as const;
 
@@ -325,7 +326,7 @@ export default function CaregiverDashboard() {
 
 
   return (
-    <div className="p-6 space-y-6 min-h-screen" style={{ backgroundColor: '#f5f5f4' }}>
+    <div className="p-6 space-y-6 min-h-screen">
       <h1 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
         Caregiver Dashboard
       </h1>
@@ -361,7 +362,7 @@ export default function CaregiverDashboard() {
           {showDatePicker && (
             <div
               className="absolute z-10 mt-2 border rounded shadow-lg w-full"
-              style={{ background: '#fff' }}
+              
             >
               <DayPicker
                 className="rdp"

@@ -16,7 +16,7 @@ export default function CaregiverForm({ initialData, onSave, onCancel }: Caregiv
   const [email, setEmail] = useState("");
   // Removed phone field
   // Removed hireDate field
-  const [isActive, setIsActive] = useState(true);
+  // Removed isActive state
 
   // Pre-fill form fields when editing
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function CaregiverForm({ initialData, onSave, onCancel }: Caregiv
       setEmail(initialData.email || "");
       // Removed phone from initialData
       // Removed hireDate from initialData
-      setIsActive(initialData.isActive ?? true);
+      // Removed isActive logic
     }
   }, [initialData]);
 
@@ -40,7 +40,7 @@ export default function CaregiverForm({ initialData, onSave, onCancel }: Caregiv
       lastName,
       email,
       // hireDate removed
-      isActive,
+      // removed isActive
       initials: generateInitials(firstName, lastName),
       updatedAt: new Date(),
     };
@@ -92,18 +92,7 @@ export default function CaregiverForm({ initialData, onSave, onCancel }: Caregiv
 
       {/* Phone Number field removed */}
 
-      <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          id="isActive"
-          checked={isActive}
-          onChange={(e) => setIsActive(e.target.checked)}
-          className="rounded"
-        />
-        <label htmlFor="isActive" className="text-sm font-medium">
-          Active Employee
-        </label>
-      </div>
+      {/* Removed Active Employee checkbox */}
 
       {firstName && lastName && (
         <div className="bg-muted p-3 rounded">
