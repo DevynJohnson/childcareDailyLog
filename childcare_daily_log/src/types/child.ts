@@ -14,4 +14,5 @@ export interface Child {
   notes?: string;
   allergies?: string;
   parents: ParentInfo[];
+  parentEmails: string[];
 }

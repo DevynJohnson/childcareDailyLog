@@ -1,3 +1,80 @@
+/* Force shadcn/ui Select dropdown popover to have a white background */
+.select-popover,[data-slot="select-content"],.select-popover * {
+  background: #fff !important;
+  color: #222 !important;
+}
+/* Global style for all h1 headers */
+h1 {
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 2px 3.5px black;
+}
+/* Responsive adjustments for mobile, tablet, and desktop */
+@media (max-width: 900px) {
+  .container, .main-content {
+    max-width: 100%;
+    padding: 1.5rem 0.5rem;
+  }
+  .card, .card-gradient {
+    max-width: 100%;
+    padding: 1.25rem;
+  }
+  .spacer {
+    height: 1rem;
+  }
+  nav, .navbar, .nav-header {
+    max-width: 100vw;
+    width: 100vw;
+    margin: 0;
+    border-radius: 0;
+  }
+  table {
+    font-size: 0.95rem;
+    max-width: 100vw;
+    overflow-x: auto;
+  }
+  th, td {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.95rem;
+  }
+  button, [role="button"], input[type="button"], input[type="submit"] {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    max-width: 100%;
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 600px) {
+  .container, .main-content {
+    padding: 1rem 0.25rem;
+  }
+  .card, .card-gradient {
+    padding: 0.75rem;
+  }
+  nav, .navbar, .nav-header {
+    padding: 0.5rem;
+    font-size: 1rem;
+  }
+  h1, h2, h3 {
+    font-size: 1.25rem;
+  }
+  table {
+    font-size: 0.9rem;
+  }
+  th, td {
+    padding: 0.35rem 0.15rem;
+    font-size: 0.9rem;
+  }
+  button, [role="button"], input[type="button"], input[type="submit"] {
+    font-size: 0.95rem;
+    padding: 0.4rem 0.75rem;
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
 @import "tailwindcss";
 @import "tw-animate-css";
 @tailwind base;
@@ -48,7 +125,7 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #f5f5f4;
+  --background: linear-gradient(135deg, var(--dark-indigo) 0%, #6366f1 100%);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);

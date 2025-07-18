@@ -7,98 +7,135 @@ import { useAuth } from "@/context/AuthContext";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
-import "../app/globals.css";
+import { useState } from "react";
+
+import { Menu, X } from "lucide-react";
+
+import styles from "./NavBar.module.css";
 
 
 
 export default function NavBar() {
-  const { user, role, loading, isSuperuser, setRoleOverride } = useAuth();
+  const { user, role, loading } = useAuth();
+  console.log('NavBar render - user:', !!user, 'role:', role, 'loading:', loading);
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+  
 
-  // Debug: log role and user info
-  if (typeof window !== 'undefined') {
-    console.log('[NavBar] user:', user?.email, 'role:', role, 'isSuperuser:', isSuperuser);
+
+  // Navigation links
+  // Modal state for admin grouped links (always declare hooks)
+
+  // Non-admin nav links
+
+  let navLinks = null;
+  if (user && role === "admin") {
+    navLinks = (
+      <Link href="/admin/dashboard" className={styles.navLink}>
+        Admin Dashboard
+      </Link>
+    );
+  } else if (user && role === "caregiver") {
+    navLinks = (
+      <Link href="/caregiver/dashboard" className={styles.navLink}>
+        Caregiver Dashboard
+      </Link>
+    );
+  } else if (user && role === "parent") {
+    navLinks = (
+      <>
+        <Link href="/parent/dashboard" className={styles.navLink}>
+          Dashboard
+        </Link>
+        <Link href="/parent/activity-view" className={styles.navLink}>
+          Activity Log
+        </Link>
+        <Link href="/parent/update-us" className={styles.navLink}>
+          Update Us
+        </Link>
+      </>
+    );
   }
 
-  if (loading) return null;
-
-  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRoleOverride(e.target.value as "admin" | "caregiver" | "parent");
-  };
+  // Determine dashboard link based on role
+  let dashboardHref = "/";
+  if (role === "admin") dashboardHref = "/admin/dashboard";
+  else if (role === "caregiver") dashboardHref = "/caregiver/dashboard";
+  else if (role === "parent") dashboardHref = "/parent/dashboard";
 
   return (
-    <nav
-      className="shadow p-4 flex justify-between items-center rounded-3xl"
-      style={{
-        background: 'linear-gradient(90deg, #479132 0%, #6fcf97 100%)',
-        boxShadow: '0 12px 36px 0 rgba(76,175,80,0.45), 0 4px 16px 0 rgba(0,0,0,0.18)',
-        zIndex: 10,
-        borderRadius: '2rem',
-        margin: '1.5rem auto',
-        width: 'calc(100% - 1rem)',
-        maxWidth: '1500px',
-      }}
-    >
-      <div className="flex items-center gap-8" style={{ color: 'var(--dark-indigo)' }}>
-        <Link href="/" className="nav-header text-xl font-bold">
+    <nav className={styles.navBarContainer}>
+      <div className={styles.navHeader}>
+        <Link href={dashboardHref} className={styles.navHeader}>
           Childcare Daily Log
         </Link>
-
-        {user && (
-          <>
-            {role === "admin" && (
-              <>
-                <Link href="/admin/dashboard" className="font-semibold hover:text-white hover:bg-[#0f005e] rounded px-2 py-1 transition-colors">
-                  Admin Dashboard
-                </Link>
-              </>
-            )}
-            {(role === "caregiver" || role === "admin") && (
-              <Link href="/caregiver/dashboard" className="font-semibold hover:text-white hover:bg-[#0f005e] rounded px-2 py-1 transition-colors">
-                Caregiver Dashboard
-              </Link>
-            )}
-            {(role === "parent" || role === "admin") && (
-              <Link href="/parent/dashboard" className="font-semibold hover:text-white hover:bg-[#0f005e] rounded px-2 py-1 transition-colors">
-                Parent/Guardian Dashboard
-              </Link>
-            )}
-          </>
-        )}
       </div>
 
-      <div className="flex items-center space-x-4 text-indigo-900" style={{ textShadow: '0 0 1px #000' }}>
-        {isSuperuser && (
-          <select
-            onChange={handleRoleChange}
-            value={role ?? ""}
-            className="border rounded px-2 py-1 bg-white text-indigo-900 shadow"
-          >
-            <option value="admin">View as Admin</option>
-            <option value="caregiver">View as Caregiver</option>
-            <option value="parent">View as Parent/Guardian</option>
-          </select>
-        )}
-      </div>
-
-      <div className="flex flex-col items-end text-right text-indigo-900" style={{ textShadow: '0 0 1px #000' }}>
-        {user ? (
-          <>
+      {/* Desktop links */}
+      <div className={styles.desktopLinks}>
+        <div className={styles.navLinksGroup}>
+          {navLinks}
+        </div>
+        <div className={styles.logoutContainer}>
+          {user ? (
             <button
               onClick={async () => {
                 localStorage.removeItem("roleOverride");
                 await signOut(auth);
                 router.push("/auth");
               }}
-              className="text-red-500 hover:text-white hover:bg-red-600 transition-colors rounded px-2 py-1"
+              className={styles.logoutButton}
             >
               Logout
             </button>
-          </>
-        ) : (
-          <Link href="/auth" className="hover:underline">
-            Login
-          </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => router.push("/auth")}
+              className={styles.navLoginButton}
+            >
+              Login
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Hamburger menu for mobile */}
+      <div className={`${styles.mobileMenuButton} ${styles.mobileOnly}`}>
+        <button
+          className="p-2 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label="Open menu"
+        >
+          {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+        {menuOpen && (
+          <div className={styles.mobileMenu}>
+            {navLinks}
+            <div style={{ textShadow: '0 0 1px #000' }} className="flex flex-col items-end text-right text-indigo-900">
+              {user ? (
+                <button
+                  onClick={async () => {
+                    setMenuOpen(false);
+                    localStorage.removeItem("roleOverride");
+                    await signOut(auth);
+                    router.push("/auth");
+                  }}
+                  className={styles.logoutButton}
+                >
+                  Logout
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); router.push("/auth"); }}
+                  className={styles.navLoginButton}
+                >
+                  Login
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </nav>

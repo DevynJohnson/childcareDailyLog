@@ -6,7 +6,7 @@ import { auth } from "@/lib/firebase";
 import { getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { Dialog } from "@headlessui/react";
-import { X, Plus, Edit2, Trash2, UserCheck, UserX } from "lucide-react";
+import { X, Plus, Edit2, Trash2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -19,7 +19,6 @@ import {
 } from "firebase/firestore";
 import { showSuccess, showError } from "@/lib/toastUtils";
 import CaregiverForm from "@/components/CaregiverForm";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { CaregiverInfo } from "@/types/caregiver";
 
@@ -28,6 +27,7 @@ export default function CaregiverManagementPage() {
   const [caregivers, setCaregivers] = useState<CaregiverInfo[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCaregiver, setEditingCaregiver] = useState<CaregiverInfo | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchCaregivers = async () => {
@@ -39,15 +39,12 @@ export default function CaregiverManagementPage() {
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       })) as CaregiverInfo[];
-      
-      // Sort by active status first, then by hire date
+      // Sort by last name, then first name
       results.sort((a, b) => {
-        if (a.isActive !== b.isActive) {
-          return a.isActive ? -1 : 1;
-        }
-        return 0;
+        const lastNameCompare = a.lastName.localeCompare(b.lastName, undefined, { sensitivity: 'base' });
+        if (lastNameCompare !== 0) return lastNameCompare;
+        return a.firstName.localeCompare(b.firstName, undefined, { sensitivity: 'base' });
       });
-      
       setCaregivers(results);
     } catch (error) {
       showError("Failed to load caregivers");
@@ -85,13 +82,10 @@ export default function CaregiverManagementPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this caregiver? This action cannot be undone.")) {
-      return;
-    }
-    
     try {
       await deleteDoc(doc(db, "caregivers", id));
       showSuccess("Caregiver deleted successfully");
+      setDeleteConfirmId(null);
       fetchCaregivers();
     } catch (error) {
       showError("Failed to delete caregiver");
@@ -99,22 +93,7 @@ export default function CaregiverManagementPage() {
     }
   };
 
-  const handleToggleActive = async (caregiver: CaregiverInfo) => {
-    if (!caregiver.id) return;
-    
-    try {
-      await updateDoc(doc(db, "caregivers", caregiver.id), {
-        isActive: !caregiver.isActive,
-        updatedAt: new Date(),
-      });
-      
-      showSuccess(`Caregiver ${caregiver.isActive ? 'deactivated' : 'activated'} successfully`);
-      fetchCaregivers();
-    } catch (error) {
-      showError("Failed to update caregiver status");
-      console.error("Error updating caregiver:", error);
-    }
-  };
+  // Removed handleToggleActive and all isActive logic
 
   const handleSave = async (caregiverData: CaregiverInfo) => {
     try {
@@ -159,73 +138,85 @@ export default function CaregiverManagementPage() {
 
   return (
     <div className="p-6 space-y-6">
+        <h1 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>Manage Caregivers</h1>
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Manage Caregivers</h1>
-        <Button onClick={handleCreate} className="flex items-center gap-2">
+        <button
+          onClick={handleCreate}
+          className="rounded-full px-6 py-3 font-medium transition-colors text-white text-center bg-gradient-to-r from-[var(--abc-green)] to-[#7ed957] hover:from-green-700 hover:to-green-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 shadow flex items-center gap-2"
+          type="button"
+        >
           <Plus className="w-4 h-4" />
           Add Caregiver
-        </Button>
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {caregivers.map((caregiver) => (
-          <Card key={caregiver.id} className="p-4">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 className="font-semibold text-lg">
-                  {caregiver.firstName} {caregiver.lastName}
-                </h3>
-                <p className="text-xs font-mono bg-muted px-1 rounded mt-1">
-                  {caregiver.initials}
-                </p>
-              </div>
-              <div className="flex items-center gap-1">
-                {caregiver.isActive ? (
-                  <UserCheck className="w-4 h-4 text-green-600" />
-                ) : (
-                  <UserX className="w-4 h-4 text-red-600" />
-                )}
-              </div>
-            </div>
-            
-            <div className="space-y-1 text-sm text-muted-foreground mb-3">
-              <p>{caregiver.email}</p>
-            </div>
-            
-            <div className="flex justify-between">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleEdit(caregiver)}
-                className="flex items-center gap-1"
+      <table
+        className="min-w-full bg-white text-center font-semibold border-2 mb-8"
+        style={{ color: 'var(--dark-indigo)', textShadow: 'none', borderColor: 'var(--dark-indigo)' }}
+      >
+        <thead>
+          <tr
+            className="bg-dark-100"
+            style={{ borderBottom: '4px solid var(--dark-indigo)' }}
+          >
+            <th className="p-2 border text-center" style={{ borderColor: 'var(--dark-indigo)' }}>Name</th>
+            <th className="p-2 border text-center" style={{ borderColor: 'var(--dark-indigo)' }}>Email Address</th>
+            <th className="p-2 border text-center" style={{ borderColor: 'var(--dark-indigo)' }}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {caregivers.map((caregiver) => (
+            <tr key={caregiver.id} className="border-t" style={{ borderColor: 'var(--dark-indigo)' }}>
+              <td className="p-2 border" style={{ borderColor: 'var(--dark-indigo)' }}>{caregiver.firstName} {caregiver.lastName}</td>
+              <td className="p-2 border" style={{ borderColor: 'var(--dark-indigo)' }}>{caregiver.email}</td>
+              <td className="p-2 border" style={{ borderColor: 'var(--dark-indigo)' }}>
+                <div className="flex flex-row gap-2 items-center justify-center min-w-[160px]">
+                  <button
+                    onClick={() => handleEdit(caregiver)}
+                    className="px-4 py-2 rounded font-medium transition-colors text-white bg-gradient-to-r from-[var(--dark-indigo)] to-indigo-500 hover:from-indigo-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 flex items-center gap-1"
+                    style={{ minWidth: 70 }}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => caregiver.id != null ? setDeleteConfirmId(String(caregiver.id)) : undefined}
+                    className="px-4 py-2 rounded bg-red-600 text-white font-medium hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 flex items-center gap-1"
+                    style={{ minWidth: 70 }}
+                    disabled={caregiver.id == null}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-auto">
+          {/* No background overlay, just the modal */}
+          <div className="relative bg-white rounded-lg shadow-lg p-6 w-full max-w-xs flex flex-col items-center border-2 border-red-200">
+            <p className="mb-4 text-center text-lg text-gray-900 font-semibold drop-shadow">Are you sure you want to delete this caregiver?</p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-4 py-2 rounded bg-gray-300 text-gray-800 font-medium hover:bg-gray-400 transition-colors"
               >
-                <Edit2 className="w-3 h-3" />
-                Edit
-              </Button>
-              
-              <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant={caregiver.isActive ? "outline" : "default"}
-                  onClick={() => handleToggleActive(caregiver)}
-                  className="text-xs"
-                >
-                  {caregiver.isActive ? "Deactivate" : "Activate"}
-                </Button>
-                
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => caregiver.id && handleDelete(caregiver.id)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              </div>
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirmId)}
+                className="px-4 py-2 rounded bg-red-600 text-white font-medium hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
+              >
+                Confirm Delete
+              </button>
             </div>
-          </Card>
-        ))}
-      </div>
+          </div>
+        </div>
+      )}
 
       {caregivers.length === 0 && (
         <Card className="p-8 text-center">

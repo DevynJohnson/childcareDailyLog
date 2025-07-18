@@ -12,18 +12,14 @@ interface AuthContextType {
   user: FirebaseUser | null;
   role: Role | null;
   loading: boolean;
-  isSuperuser: boolean;
   caregiverInfo: CaregiverInfo | null;
-  setRoleOverride: (newRole: Role) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   role: null,
   loading: true,
-  isSuperuser: false,
   caregiverInfo: null,
-  setRoleOverride: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -32,18 +28,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [role, setRole] = useState<Role | null>(null);
-  const [isSuperuser, setIsSuperuser] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [roleOverride, setRoleOverrideState] = useState<Role | null>(null);
   const [caregiverInfo, setCaregiverInfo] = useState<CaregiverInfo | null>(null);
 
   // 🔁 Load role override from localStorage on mount
-  useEffect(() => {
-    const savedOverride = localStorage.getItem('roleOverride');
-    if (savedOverride === 'admin' || savedOverride === 'caregiver' || savedOverride === 'parent') {
-      setRoleOverrideState(savedOverride);
-    }
-  }, []);
+  // No-op: role override logic removed
+  useEffect(() => {}, []);
 
   // 🧠 Track auth state
   useEffect(() => {
@@ -51,65 +41,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[AuthContext] onAuthStateChanged called. firebaseUser:', firebaseUser);
       setUser(firebaseUser);
 
-      if (firebaseUser) {
-        console.log('[AuthContext] Fetching Firestore user doc for UID:', firebaseUser.uid);
-        const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
-        console.log('[AuthContext] Firestore user doc exists:', snap.exists(), 'data:', snap.data(), 'user:', firebaseUser.email);
-        if (snap.exists()) {
-          const data = snap.data();
-          setRole(data.role);
-          setIsSuperuser(!!data.isSuperuser);
-          console.log('[AuthContext] Set role:', data.role, 'isSuperuser:', !!data.isSuperuser, 'user:', firebaseUser.email);
-          // Only require email verification for caregivers and parents
-          if ((data.role === 'caregiver' || data.role === 'parent') && !firebaseUser.emailVerified) {
-            setRole(null);
-            setIsSuperuser(false);
-            setCaregiverInfo(null);
-            return;
-          }
-          // If user is a caregiver, fetch their profile info
-          if (data.role === 'caregiver') {
-            const caregiverSnap = await getDoc(doc(db, 'caregivers', firebaseUser.uid));
-            if (caregiverSnap.exists()) {
-              setCaregiverInfo(caregiverSnap.data() as CaregiverInfo);
-            }
-          } else {
-            setCaregiverInfo(null);
-          }
-        } else {
-          setRole(null);
-          setIsSuperuser(false);
-          setCaregiverInfo(null);
-        }
-      } else {
+      if (!firebaseUser) {
         setRole(null);
-        setIsSuperuser(false);
         setCaregiverInfo(null);
+        setLoading(false);
+        return;
       }
 
-      setLoading(false);
+      let resolvedRole: Role | null = null;
+      let resolvedCaregiverInfo: CaregiverInfo | null = null;
+
+      console.log('[AuthContext] Fetching Firestore user doc for UID:', firebaseUser.uid);
+      const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
+      const docData = snap.data();
+      console.log('[AuthContext] Firestore user doc exists:', snap.exists(), 'data:', docData, 'user:', firebaseUser.email);
+      if (snap.exists() && docData) {
+        console.log('[AuthContext] Firestore user doc fields:', Object.keys(docData));
+        const data = docData;
+        resolvedRole = data.role;
+        console.log('[AuthContext] Set role:', data.role, 'user:', firebaseUser.email);
+
+        // Only require email verification for caregivers and parents
+        if ((data.role === 'caregiver' || data.role === 'parent') && !firebaseUser.emailVerified) {
+          resolvedRole = null;
+          resolvedCaregiverInfo = null;
+          setRole(null);
+          setCaregiverInfo(null);
+          return;
+        }
+
+        // If user is a caregiver, fetch their profile info
+        if (data.role === 'caregiver') {
+          const caregiverSnap = await getDoc(doc(db, 'caregivers', firebaseUser.uid));
+          if (caregiverSnap.exists()) {
+            resolvedCaregiverInfo = caregiverSnap.data() as CaregiverInfo;
+          }
+        }
+      } else if (snap.exists() && !docData) {
+        console.error('[AuthContext] Firestore user doc is empty for UID:', firebaseUser.uid);
+      }
+
+      setRole(resolvedRole);
+      setCaregiverInfo(resolvedCaregiverInfo);
     });
 
     return () => unsubscribeAuth();
   }, []);
 
-  // 🎯 Define override setter that updates state and localStorage
-  const setRoleOverride = (newRole: Role) => {
-    setRoleOverrideState(newRole);
-    localStorage.setItem('roleOverride', newRole);
-  };
-
-  const effectiveRole = isSuperuser && roleOverride ? roleOverride : role;
+  // Only set loading to false when user is null (logged out) or role is set (logged in and role loaded)
+  useEffect(() => {
+    if (user === null || role !== null) {
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+  }, [user, role]);
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        role: effectiveRole,
+        role,
         loading,
-        isSuperuser,
         caregiverInfo,
-        setRoleOverride,
       }}
     >
       {children}
