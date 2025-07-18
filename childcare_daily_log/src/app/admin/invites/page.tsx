@@ -6,13 +6,10 @@ import { getUsersByRole } from '@/lib/userQueryService';
 import { collection, getDocs } from 'firebase/firestore';
 import { Invite } from '@/types/invite';
 import { Button } from '@/components/ui/button';
-
 import { useRouter } from 'next/navigation';
-import { useEffect as useAuthEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { getDoc, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 type UserRow = {
   email: string;
@@ -23,54 +20,99 @@ type UserRow = {
 export default function InvitesPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
-  // Debug logging removed, restored to original state
   const [invites, setInvites] = useState<Invite[]>([]);
   const [parents, setParents] = useState<UserRow[]>([]);
   const [caregivers, setCaregivers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  // Add missing state for email, role, and childIds
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'parent' | 'caregiver'>('parent');
   const [childIds, setChildIds] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
 
   const router = useRouter();
-  // Secure: Only allow admins
-  useAuthEffect(() => {
+
+  // Authentication and authorization check
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('Auth state changed:', user ? 'User logged in' : 'No user');
+      
       if (!user) {
+        console.log('No user, redirecting to auth');
         router.replace('/auth');
         setAuthChecked(true);
         return;
       }
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (!userDoc.exists() || userDoc.data().role !== 'admin') {
-        router.replace('/');
+
+      setCurrentUser(user);
+      
+      try {
+        console.log('Checking user role for:', user.uid);
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        
+        if (!userDoc.exists()) {
+          console.log('User document does not exist');
+          setError('User profile not found. Please contact support.');
+          router.replace('/');
+          setAuthChecked(true);
+          return;
+        }
+
+        const userData = userDoc.data();
+        console.log('User data:', userData);
+        
+        if (userData.role !== 'admin') {
+          console.log('User is not admin, role:', userData.role);
+          setError('Access denied. Admin privileges required.');
+          router.replace('/');
+          setAuthChecked(true);
+          return;
+        }
+
+        console.log('User is admin, setting permissions');
+        setIsAdmin(true);
         setAuthChecked(true);
-        return;
+      } catch (error) {
+        console.error('Error checking user role:', error);
+        setError('Error verifying permissions. Please try again.');
+        setAuthChecked(true);
       }
-      setIsAdmin(true);
-      setAuthChecked(true);
     });
+
     return () => unsubscribe();
   }, [router]);
-  useEffect(() => {
-    if (isAdmin && authChecked) {
-      getAllInvites().then(setInvites);
-      // Fetch all caregivers (registered users)
-      getUsersByRole('caregiver').then(users => setCaregivers(users.map(u => ({ email: u.email, name: u.name, registered: true }))));
 
-      // Fetch all parents from children collection
-      (async () => {
+  // Load data when admin is confirmed
+  useEffect(() => {
+    if (!isAdmin || !authChecked || !currentUser) {
+      return;
+    }
+
+    const loadData = async () => {
+      try {
+        console.log('Loading invites and users data');
+        
+        // Load invites
+        const invitesData = await getAllInvites();
+        setInvites(invitesData);
+        
+        // Load caregivers
+        const caregiversData = await getUsersByRole('caregiver');
+        setCaregivers(caregiversData.map(u => ({ 
+          email: u.email, 
+          name: u.name, 
+          registered: true 
+        })));
+
+        // Load parents from children collection
         const snapshot = await getDocs(collection(db, 'children'));
         const allParents: { email: string; name: string }[] = [];
-        type Parent = { email: string; firstName: string; lastName: string };
+        
         snapshot.docs.forEach(docSnap => {
           const data = docSnap.data();
           if (Array.isArray(data.parents)) {
-            data.parents.forEach((parent: Parent) => {
+            data.parents.forEach((parent: any) => {
               if (parent.email && parent.firstName && parent.lastName) {
                 allParents.push({
                   email: parent.email,
@@ -80,27 +122,41 @@ export default function InvitesPage() {
             });
           }
         });
+
         // Deduplicate by email
         const uniqueParents = Array.from(
           new Map(allParents.map(p => [p.email, p])).values()
         );
-        // Check registration status by cross-referencing with users
-        const registeredUsers = await getUsersByRole('parent');
+
+        // Check registration status
+        const registeredParents = await getUsersByRole('parent');
         setParents(
           uniqueParents.map(parent => ({
             email: parent.email,
             name: parent.name,
-            registered: registeredUsers.some(u => u.email === parent.email),
+            registered: registeredParents.some(u => u.email === parent.email),
           }))
         );
-      })();
-    }
-  }, [isAdmin, authChecked, success]);
+
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setError('Failed to load data. Please refresh the page.');
+      }
+    };
+
+    loadData();
+  }, [isAdmin, authChecked, currentUser, success]);
 
   const handleInvite = async () => {
+    if (!currentUser) {
+      setError('Not authenticated');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setSuccess('');
+    
     try {
       await createInvite({
         email: email.trim().toLowerCase(),
@@ -111,46 +167,76 @@ export default function InvitesPage() {
       setEmail('');
       setChildIds('');
       setRole('parent');
-    } catch {
-      setError('Failed to send invite.');
+    } catch (error) {
+      console.error('Error sending invite:', error);
+      setError('Failed to send invite. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper to check if an invite exists for a given email/role
-  const findInvite = (email: string, role: 'parent' | 'caregiver') => invites.find(i => i.email === email && i.role === role);
+  const findInvite = (email: string, role: 'parent' | 'caregiver') => 
+    invites.find(i => i.email === email && i.role === role);
 
-  // Send invite for a user
   const handleSendInvite = async (email: string, role: 'parent' | 'caregiver') => {
+    if (!currentUser) {
+      setError('Not authenticated');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setSuccess('');
+    
     try {
       await createInvite({ email, role });
       setSuccess('Invite sent!');
-    } catch {
-      setError('Failed to send invite.');
+    } catch (error) {
+      console.error('Error sending invite:', error);
+      setError('Failed to send invite. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   if (!authChecked) {
-    return <div className="p-6">Checking admin permissions...</div>;
+    return (
+      <div className="p-6 text-center">
+        <div>Checking admin permissions...</div>
+      </div>
+    );
   }
+
   if (!isAdmin) {
-    return null;
+    return (
+      <div className="p-6 text-center">
+        <div className="text-red-600 mb-4">
+          {error || 'Access denied. Admin privileges required.'}
+        </div>
+        <Button onClick={() => router.push('/')}>
+          Return to Home
+        </Button>
+      </div>
+    );
   }
+
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg mb-8" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>User Registration & Invites</h1>
-      {error && <div className="text-red-600 mb-2">{error}</div>}
-      {success && <div className="text-green-600 mb-2">{success}</div>}
+      <h1 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg mb-8" 
+          style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
+        User Registration & Invites
+      </h1>
+      
+      {error && <div className="text-red-600 mb-2 p-2 bg-red-50 rounded">{error}</div>}
+      {success && <div className="text-green-600 mb-2 p-2 bg-green-50 rounded">{success}</div>}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
         {/* Caregivers Table */}
         <div className="card-gradient p-8 rounded-lg shadow-md min-w-[480px]">
-          <h2 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg mb-6" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>Caregivers</h2>
+          <h2 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg mb-6" 
+              style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
+            Caregivers
+          </h2>
           <table className="w-full border text-sm">
             <thead>
               <tr>
@@ -183,9 +269,13 @@ export default function InvitesPage() {
             </tbody>
           </table>
         </div>
+
         {/* Parents Table */}
         <div className="card-gradient p-8 rounded-lg shadow-md min-w-[480px]">
-          <h2 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg mb-6" style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>Parents</h2>
+          <h2 className="text-2xl font-bold text-center text-indigo-900 drop-shadow-lg mb-6" 
+              style={{ textShadow: '0 2px 8px #a5b4fc, 0 1px 0 #312e81' }}>
+            Parents
+          </h2>
           <table className="w-full border text-sm">
             <thead>
               <tr>
