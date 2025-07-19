@@ -1,8 +1,0 @@
-.adminTitle {
-  text-shadow: 0 2px 8px #a5b4fc, 0 1px 0 #312e81;
-}
-.tableHeader {
-  color: var(--dark-indigo);
-  text-shadow: none;
-  border-color: var(--dark-indigo);
-}
