@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { formatPhoneNumber } from "@/lib/formatPhoneNumber";
 import type { Child, ParentInfo } from "@/types/child";
