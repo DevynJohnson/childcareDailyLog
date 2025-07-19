@@ -5,7 +5,13 @@ import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatTimestamp } from "@/lib/dateUtils";
 import { Calendar, User, Edit, Trash2, Plus } from "lucide-react";
 
@@ -48,27 +54,42 @@ export default function ActivityAuditPage() {
   const fetchAuditEntries = async () => {
     try {
       const allEntries: AuditEntry[] = [];
-      
+
       // Get children to filter by if needed
-      const childrenToQuery = selectedChildId === "all" ? children : children.filter(c => c.id === selectedChildId);
-      
+      const childrenToQuery =
+        selectedChildId === "all"
+          ? children
+          : children.filter((c) => c.id === selectedChildId);
+
       for (const child of childrenToQuery) {
-        const activityTypes = ["Bathroom", "Sleep", "Activities", "Food", "Needs"];
-        
+        const activityTypes = [
+          "Bathroom",
+          "Sleep",
+          "Activities",
+          "Food",
+          "Needs",
+        ];
+
         for (const activityType of activityTypes) {
           // Get recent activity documents
-          const activitiesRef = collection(db, `children/${child.id}/activities`);
+          const activitiesRef = collection(
+            db,
+            `children/${child.id}/activities`
+          );
           const activitiesSnapshot = await getDocs(activitiesRef);
-          
+
           for (const activityDoc of activitiesSnapshot.docs) {
             if (activityDoc.id.includes(activityType)) {
               // Get items and their edit history
-              const itemsRef = collection(db, `children/${child.id}/activities/${activityDoc.id}/items`);
+              const itemsRef = collection(
+                db,
+                `children/${child.id}/activities/${activityDoc.id}/items`
+              );
               const itemsSnapshot = await getDocs(itemsRef);
-              
+
               for (const itemDoc of itemsSnapshot.docs) {
                 const itemData = itemDoc.data();
-                
+
                 // Add creation entry
                 if (itemData.createdAt) {
                   allEntries.push({
@@ -78,17 +99,27 @@ export default function ActivityAuditPage() {
                     activityType,
                     editType: "create",
                     timestamp: itemData.createdAt.toDate(),
-                    createdBy: itemData.createdBy || itemData.lastModifiedBy || "Unknown",
+                    createdBy:
+                      itemData.createdBy ||
+                      itemData.lastModifiedBy ||
+                      "Unknown",
                     notes: itemData.notes,
                     ...itemData,
                   });
                 }
-                
+
                 // Get edit history
-                const historyRef = collection(db, `children/${child.id}/activities/${activityDoc.id}/items/${itemDoc.id}/editHistory`);
-                const historyQuery = query(historyRef, orderBy("editedAt", "desc"), limit(50));
+                const historyRef = collection(
+                  db,
+                  `children/${child.id}/activities/${activityDoc.id}/items/${itemDoc.id}/editHistory`
+                );
+                const historyQuery = query(
+                  historyRef,
+                  orderBy("editedAt", "desc"),
+                  limit(50)
+                );
                 const historySnapshot = await getDocs(historyQuery);
-                
+
                 historySnapshot.docs.forEach((historyDoc) => {
                   const historyData = historyDoc.data();
                   allEntries.push({
@@ -96,9 +127,19 @@ export default function ActivityAuditPage() {
                     childId: child.id,
                     childName: `${child.firstName} ${child.lastName}`,
                     activityType,
-                    editType: historyData.editType || (historyData.deletedAt ? "delete" : "update"),
-                    timestamp: (historyData.editedAt || historyData.deletedAt || historyData.updatedAt)?.toDate() || new Date(),
-                    editedBy: historyData.editedBy || historyData.deletedBy || "Unknown",
+                    editType:
+                      historyData.editType ||
+                      (historyData.deletedAt ? "delete" : "update"),
+                    timestamp:
+                      (
+                        historyData.editedAt ||
+                        historyData.deletedAt ||
+                        historyData.updatedAt
+                      )?.toDate() || new Date(),
+                    editedBy:
+                      historyData.editedBy ||
+                      historyData.deletedBy ||
+                      "Unknown",
                     notes: historyData.notes,
                     ...historyData,
                   });
@@ -108,15 +149,16 @@ export default function ActivityAuditPage() {
           }
         }
       }
-      
+
       // Sort by timestamp descending
       allEntries.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-      
+
       // Filter by edit type if specified
-      const filteredEntries = selectedEditType === "all" 
-        ? allEntries 
-        : allEntries.filter(entry => entry.editType === selectedEditType);
-      
+      const filteredEntries =
+        selectedEditType === "all"
+          ? allEntries
+          : allEntries.filter((entry) => entry.editType === selectedEditType);
+
       setAuditEntries(filteredEntries.slice(0, 100)); // Limit to 100 most recent
     } catch (error) {
       console.error("Error fetching audit entries:", error);
@@ -137,19 +179,27 @@ export default function ActivityAuditPage() {
 
   const getEditIcon = (editType: string) => {
     switch (editType) {
-      case "create": return <Plus className="w-4 h-4 text-green-600" />;
-      case "update": return <Edit className="w-4 h-4 text-blue-600" />;
-      case "delete": return <Trash2 className="w-4 h-4 text-red-600" />;
-      default: return <Edit className="w-4 h-4" />;
+      case "create":
+        return <Plus className="w-4 h-4 text-green-600" />;
+      case "update":
+        return <Edit className="w-4 h-4 text-blue-600" />;
+      case "delete":
+        return <Trash2 className="w-4 h-4 text-red-600" />;
+      default:
+        return <Edit className="w-4 h-4" />;
     }
   };
 
   const getEditColor = (editType: string) => {
     switch (editType) {
-      case "create": return "bg-green-100 text-green-800";
-      case "update": return "bg-blue-100 text-blue-800";
-      case "delete": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "create":
+        return "bg-green-100 text-green-800";
+      case "update":
+        return "bg-blue-100 text-blue-800";
+      case "delete":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -175,7 +225,7 @@ export default function ActivityAuditPage() {
               ))}
             </SelectContent>
           </Select>
-          
+
           <Select value={selectedEditType} onValueChange={setSelectedEditType}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Filter by action" />
@@ -204,17 +254,20 @@ export default function ActivityAuditPage() {
                       {entry.editType}
                     </Badge>
                   </div>
-                  
+
                   {entry.notes && (
                     <p className="text-sm text-muted-foreground mb-2">
                       &ldquo;{entry.notes}&rdquo;
                     </p>
                   )}
-                  
+
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <User className="w-3 h-3" />
-                      {entry.editedBy || entry.createdBy || entry.deletedBy || "Unknown"}
+                      {entry.editedBy ||
+                        entry.createdBy ||
+                        entry.deletedBy ||
+                        "Unknown"}
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
@@ -230,7 +283,9 @@ export default function ActivityAuditPage() {
 
       {auditEntries.length === 0 && (
         <Card className="p-8 text-center">
-          <p className="text-muted-foreground">No audit entries found for the selected filters.</p>
+          <p className="text-muted-foreground">
+            No audit entries found for the selected filters.
+          </p>
         </Card>
       )}
     </div>

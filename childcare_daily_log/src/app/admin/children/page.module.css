@@ -1,0 +1,29 @@
+.adminTitle {
+  text-shadow: 0 2px 8px #a5b4fc, 0 1px 0 #312e81;
+}
+.tableHeader {
+  color: var(--dark-indigo);
+  text-shadow: none;
+  border-color: var(--dark-indigo);
+}
+.tableBorder {
+  border-color: var(--dark-indigo);
+}
+.tableBottom {
+  border-bottom: 4px solid var(--dark-indigo);
+}
+.tableCell {
+  border-color: var(--dark-indigo);
+}
+.minWidth98 {
+  min-width: 0;
+  font-size: 0.98rem;
+}
+.minWidth180 {
+  min-width: 180px;
+  top: -8px;
+  right: -200px;
+}
+.minWidth70 {
+  min-width: 70px;
+}
