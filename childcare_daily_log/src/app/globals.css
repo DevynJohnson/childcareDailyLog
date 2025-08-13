@@ -1,80 +1,3 @@
-/* Force shadcn/ui Select dropdown popover to have a white background */
-.select-popover,[data-slot="select-content"],.select-popover * {
-  background: #fff !important;
-  color: #222 !important;
-}
-/* Global style for all h1 headers */
-h1 {
-  text-align: center;
-  color: #fff;
-  text-shadow: 0 2px 3.5px black;
-}
-/* Responsive adjustments for mobile, tablet, and desktop */
-@media (max-width: 900px) {
-  .container, .main-content {
-    max-width: 100%;
-    padding: 1.5rem 0.5rem;
-  }
-  .card, .card-gradient {
-    max-width: 100%;
-    padding: 1.25rem;
-  }
-  .spacer {
-    height: 1rem;
-  }
-  nav, .navbar, .nav-header {
-    max-width: 100vw;
-    width: 100vw;
-    margin: 0;
-    border-radius: 0;
-  }
-  table {
-    font-size: 0.95rem;
-    max-width: 100vw;
-    overflow-x: auto;
-  }
-  th, td {
-    padding: 0.5rem 0.25rem;
-    font-size: 0.95rem;
-  }
-  button, [role="button"], input[type="button"], input[type="submit"] {
-    min-width: 44px;
-    min-height: 44px;
-    font-size: 1rem;
-    padding: 0.5rem 1rem;
-    max-width: 100%;
-    word-break: break-word;
-  }
-}
-
-@media (max-width: 600px) {
-  .container, .main-content {
-    padding: 1rem 0.25rem;
-  }
-  .card, .card-gradient {
-    padding: 0.75rem;
-  }
-  nav, .navbar, .nav-header {
-    padding: 0.5rem;
-    font-size: 1rem;
-  }
-  h1, h2, h3 {
-    font-size: 1.25rem;
-  }
-  table {
-    font-size: 0.9rem;
-  }
-  th, td {
-    padding: 0.35rem 0.15rem;
-    font-size: 0.9rem;
-  }
-  button, [role="button"], input[type="button"], input[type="submit"] {
-    font-size: 0.95rem;
-    padding: 0.4rem 0.75rem;
-    min-width: 40px;
-    min-height: 40px;
-  }
-}
 @import "tailwindcss";
 @import "tw-animate-css";
 @tailwind base;
@@ -194,19 +117,47 @@ h1 {
   --sidebar-ring: oklch(0.552 0.016 285.938);
 }
 
-.nav-header {
-  text-shadow: 0 2px 8px #a5b4fc, 1px 1px 0 #312e81;
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  
   body {
     background: var(--background);
     color: var(--color-foreground);
+    font-family: var(--font-sans, 'Inter', 'Segoe UI', Arial, sans-serif);
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 18px;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
   }
-  /* Default card gradient background */
+  
+  /* Typography */
+  h1 {
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 2px 3.5px black;
+  }
+  
+  /* Layout Components */
+  .container, .main-content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+  
+  .card {
+    border-radius: var(--radius-xl, 1.25rem);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  /* Card with gradient background */
   .card-gradient {
     background: linear-gradient(90deg, #479132 0%, #6fcf97 100%) !important;
     border: 2px solid #357024;
@@ -217,58 +168,11 @@ h1 {
     z-index: 1;
   }
   
-  /* Primary button accent background */
-  .btn-primary {
-    background: #0f005e !important;
-    color: #fff !important;
-    border: none !important;
-    box-shadow: 0 2px 8px rgba(15,0,94,0.16) !important;
+  .spacer {
+    height: 2rem;
   }
-  .btn-primary:hover, .btn-primary:focus {
-    background: #18008a !important;
-  }
-  /* Gradient background utility classes */
-  .bg-gradient-1 {
-    background: var(--gradient-1);
-  }
-  .bg-gradient-2 {
-    background: var(--gradient-2);
-  }
-  .bg-gradient-3 {
-    background: var(--gradient-3);
-  }
-  .bg-gradient-4 {
-    background: var(--gradient-4);
-  }
-  .bg-gradient-5 {
-    background: var(--gradient-5);
-  }
-  /* Accent color utility classes */
-  .text-accent-pink { color: var(--accent-pink); }
-  .text-accent-yellow { color: var(--accent-yellow); }
-  .text-accent-blue { color: var(--accent-blue); }
-  .text-accent-green { color: var(--accent-green); }
-  .text-accent-orange { color: var(--accent-orange); }
-  .bg-accent-pink { background: var(--accent-pink); }
-  .bg-accent-yellow { background: var(--accent-yellow); }
-  .bg-accent-blue { background: var(--accent-blue); }
-  .bg-accent-green { background: var(--accent-green); }
-  .bg-accent-orange { background: var(--accent-orange); }
-  html {
-    font-size: 18px; /* Larger base font for readability on tablets */
-    -webkit-tap-highlight-color: transparent;
-    scroll-behavior: smooth;
-  }
-  body {
-    font-family: var(--font-sans, 'Inter', 'Segoe UI', Arial, sans-serif);
-    min-height: 100vh;
-    padding: 0;
-    margin: 0;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    background: var(--color-background);
-    color: var(--color-foreground);
-  }
+  
+  /* Form Elements */
   button, [role="button"], input[type="button"], input[type="submit"] {
     min-height: 56px;
     min-width: 56px;
@@ -279,47 +183,140 @@ h1 {
     touch-action: manipulation;
     transition: background 0.2s, color 0.2s, box-shadow 0.2s;
   }
+  
+  /* Primary button styling */
+  .btn-primary {
+    background: #0f005e !important;
+    color: #fff !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(15,0,94,0.16) !important;
+  }
+  .btn-primary:hover, .btn-primary:focus {
+    background: #18008a !important;
+  }
+  
   input, select, textarea {
     font-size: 1.125rem;
     border-radius: var(--radius-md, 0.75rem);
     padding: 0.75rem 1rem;
     box-sizing: border-box;
   }
+  
   select, input[type="date"] {
     background-color: #fff !important;
     color: #1e293b !important;
     border: 1px solid #d1d5db;
     box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
+  
   label {
     font-size: 1rem;
     margin-bottom: 0.5rem;
     display: block;
   }
-  .container, .main-content {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-  }
-  .card {
-    border-radius: var(--radius-xl, 1.25rem);
-    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-    padding: 2rem;
-    margin-bottom: 2rem;
-  }
-  .spacer {
-    height: 2rem;
-  }
+  
+  /* Utility Classes */
+  .bg-gradient-1 { background: var(--gradient-1); }
+  .bg-gradient-2 { background: var(--gradient-2); }
+  .bg-gradient-3 { background: var(--gradient-3); }
+  .bg-gradient-4 { background: var(--gradient-4); }
+  .bg-gradient-5 { background: var(--gradient-5); }
+  
+  .text-accent-pink { color: var(--accent-pink); }
+  .text-accent-yellow { color: var(--accent-yellow); }
+  .text-accent-blue { color: var(--accent-blue); }
+  .text-accent-green { color: var(--accent-green); }
+  .text-accent-orange { color: var(--accent-orange); }
+  .bg-accent-pink { background: var(--accent-pink); }
+  .bg-accent-yellow { background: var(--accent-yellow); }
+  .bg-accent-blue { background: var(--accent-blue); }
+  .bg-accent-green { background: var(--accent-green); }
+  .bg-accent-orange { background: var(--accent-orange); }
 }
 
-/* Force DayPicker calendar popup and all children to have a white background */
+/* Component-specific overrides */
+/* Force shadcn/ui Select dropdown to have white background */
+.select-popover, [data-slot="select-content"], .select-popover * {
+  background: #fff !important;
+  color: #222 !important;
+}
+
+/* Force DayPicker calendar popup to have white background */
 .rdp, .rdp *, .react-day-picker, .react-day-picker * {
   background: #fff !important;
   background-color: #fff !important;
 }
-/* Force DayPicker calendar popup to have a white background */
+
 .rdp, .react-day-picker {
   background: #fff !important;
   border-radius: 8px;
   box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+  .container, .main-content {
+    max-width: 100%;
+    padding: 1.5rem 0.5rem;
+  }
+  
+  .card, .card-gradient {
+    max-width: 100%;
+    padding: 1.25rem;
+  }
+  
+  .spacer {
+    height: 1rem;
+  }
+  
+  /* Allow navbar to be responsive - removed the conflicting full-width rules */
+  table {
+    font-size: 0.95rem;
+    max-width: 100vw;
+    overflow-x: auto;
+  }
+  
+  th, td {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.95rem;
+  }
+  
+  button, [role="button"], input[type="button"], input[type="submit"] {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    max-width: 100%;
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 600px) {
+  .container, .main-content {
+    padding: 1rem 0.25rem;
+  }
+  
+  .card, .card-gradient {
+    padding: 0.75rem;
+  }
+  
+  h1, h2, h3 {
+    font-size: 1.25rem;
+  }
+  
+  table {
+    font-size: 0.9rem;
+  }
+  
+  th, td {
+    padding: 0.35rem 0.15rem;
+    font-size: 0.9rem;
+  }
+  
+  button, [role="button"], input[type="button"], input[type="submit"] {
+    font-size: 0.95rem;
+    padding: 0.4rem 0.75rem;
+    min-width: 40px;
+    min-height: 40px;
+  }
 }
