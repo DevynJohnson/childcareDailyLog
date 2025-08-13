@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-// Show notes state for toggling notes display per activity
 import { useState as useLocalState } from "react";
 import {
   collection,
